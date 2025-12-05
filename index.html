@@ -1,0 +1,3064 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElectroHogar - Almacén de Electrodomésticos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .product-card {
+            transition: all 0.3s ease;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .badge {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .8;
+            }
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .star-rating {
+            color: #fbbf24;
+        }
+        
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                transform: translateX(-100%);
+                z-index: 999;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+        
+        .flash-sale {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+        }
+        
+        .trust-badge {
+            transition: all 0.3s ease;
+        }
+        
+        .trust-badge:hover {
+            transform: scale(1.05);
+        }
+        
+        .loading {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .confirmation-dialog {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .countdown-timer {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Notifications Container -->
+    <div id="notifications-container"></div>
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <button id="menu-toggle" class="md:hidden mr-4 text-gray-700">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <div class="flex-shrink-0 flex items-center cursor-pointer" onclick="app.showSection('home')">
+                        <i class="fas fa-bolt text-3xl text-blue-600 mr-2"></i>
+                        <span class="text-2xl font-bold text-gray-900">ElectroHogar</span>
+                    </div>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a onclick="app.showSection('home')" class="nav-link cursor-pointer text-gray-700 hover:text-blue-600 font-medium transition flex items-center">
+                        <i class="fas fa-home mr-2"></i> Inicio
+                    </a>
+                    <a onclick="app.showSection('products')" class="nav-link cursor-pointer text-gray-700 hover:text-blue-600 font-medium transition flex items-center">
+                        <i class="fas fa-box mr-2"></i> Productos
+                    </a>
+                    <a onclick="app.showSection('about')" class="nav-link cursor-pointer text-gray-700 hover:text-blue-600 font-medium transition flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i> Nosotros
+                    </a>
+                    <a onclick="app.showSection('contact')" class="nav-link cursor-pointer text-gray-700 hover:text-blue-600 font-medium transition flex items-center">
+                        <i class="fas fa-envelope mr-2"></i> Contacto
+                    </a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="relative" id="user-menu-container">
+                        <!-- User menu will be rendered here -->
+                    </div>
+                    <button onclick="app.showSection('wishlist')" class="relative text-gray-700 hover:text-red-600 transition p-2 rounded-full hover:bg-red-50">
+                        <i class="fas fa-heart text-xl"></i>
+                        <span id="wishlist-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                    </button>
+                    <button onclick="app.showSection('cart')" class="relative text-gray-700 hover:text-blue-600 transition p-2 rounded-full hover:bg-blue-50">
+                        <i class="fas fa-shopping-cart text-xl"></i>
+                        <span id="cart-count" class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div id="main-content"></div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-bolt text-blue-400 mr-2"></i>
+                        ElectroHogar
+                    </h3>
+                    <p class="text-gray-400">Tu tienda de confianza para electrodomésticos de calidad al mejor precio.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Categorías</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition">Refrigeración</a></li>
+                        <li><a href="#" class="hover:text-white transition">Cocina</a></li>
+                        <li><a href="#" class="hover:text-white transition">Lavandería</a></li>
+                        <li><a href="#" class="hover:text-white transition">Climatización</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Ayuda</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition">Política de devoluciones</a></li>
+                        <li><a href="#" class="hover:text-white transition">Envíos</a></li>
+                        <li><a href="#" class="hover:text-white transition">Garantía</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Contacto</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><i class="fas fa-phone mr-2"></i> 305 434 3233</li>
+                        <li><i class="fas fa-envelope mr-2"></i> electrohogar@info.com</li>
+                        <li><i class="fas fa-map-marker-alt mr-2"></i> Chinu - Cordoba, Colombia</li>
+                    </ul>
+                    <div class="flex space-x-4 mt-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-facebook text-xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-instagram text-xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-twitter text-xl"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 ElectroHogar. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Configuración de la API
+       const API_URL = 'https://script.google.com/macros/s/AKfycbzbyyMRsaluTTNNQUaH_Ry9kucfT2-6jklk1NotLM9Co28QY_-1Qj8WPCRZvxIWw-rC/exec'; // Reemplazar con la URL de tu Web App
+                        
+        // Application State Management
+        const app = {
+            currentUser: null,
+            currentSection: 'home',
+            cart: [],
+            wishlist: [],
+            products: [],
+            categories: [],
+            orders: [],
+            users: [],
+            reviews: [],
+            filters: {
+                category: 'all',
+                search: '',
+                minPrice: 0,
+                maxPrice: 10000,
+                rating: 0,
+                availability: 'all'
+            },
+            loading: false,
+
+            async init() {
+                await this.loadData();
+                this.renderUserMenu();
+                this.showSection('home');
+                this.updateCartCount();
+                this.updateWishlistCount();
+                
+                // Iniciar contador para ofertas relámpago
+                this.startCountdown();
+            },
+
+            async loadData() {
+                try {
+                    this.loading = true;
+                    
+                    // Cargar datos desde Google Sheets
+                    const [productsRes, categoriesRes, usersRes, ordersRes, reviewsRes] = await Promise.all([
+                        this.apiRequest('read', 'products'),
+                        this.apiRequest('read', 'categories'),
+                        this.apiRequest('read', 'users'),
+                        this.apiRequest('read', 'orders'),
+                        this.apiRequest('read', 'reviews')
+                    ]);
+
+                    if (productsRes.success) this.products = productsRes.data || [];
+                    if (categoriesRes.success) this.categories = categoriesRes.data || [];
+                    if (usersRes.success) this.users = usersRes.data || [];
+                    if (ordersRes.success) this.orders = ordersRes.data || [];
+                    if (reviewsRes.success) this.reviews = reviewsRes.data || [];
+
+                    // Cargar datos locales
+                    const savedUser = localStorage.getItem('currentUser');
+                    if (savedUser) {
+                        this.currentUser = JSON.parse(savedUser);
+                    }
+                    this.cart = JSON.parse(localStorage.getItem('cart')) || [];
+                    this.wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+
+                    // Si no hay datos, inicializar con datos de ejemplo
+                    if (this.products.length === 0) {
+                        await this.initSampleData();
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    this.showNotification('Error al cargar datos', 'error');
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async apiRequest(action, table, payload = null) {
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: action,
+                            table: table,
+                            payload: payload
+                        })
+                    });
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('API Request Error:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+             async initSampleData() {
+                // Crear categorías
+                this.categories = [
+                    { id: 1, name: 'Refrigeración', icon: 'fa-snowflake' },
+                    { id: 2, name: 'Cocina', icon: 'fa-fire-burner' },
+                    { id: 3, name: 'Lavandería', icon: 'fa-shirt' },
+                    { id: 4, name: 'Climatización', icon: 'fa-wind' },
+                    { id: 5, name: 'Pequeños Electrodomésticos', icon: 'fa-blender' },
+                    { id: 6, name: 'Sonido', icon: 'fa-volume-up' }
+                ];
+
+                // Crear productos del catálogo
+                this.products = [
+                // NEVERAS
+                {
+                    id: 1,
+                    name: 'Nevera No Frost Mabe 360L',
+                    category: 'Refrigeración',
+                    price: 2599.99,
+                    image: 'https://easycolombia.vtexassets.com/arquivos/ids/224690-800-600?v=638445575180430000&width=800&height=600&aspect=true',
+                    description: 'Enfriamiento uniforme.',
+                    stock: 10,
+                    specs: { capacidad: '360 litros', tipo: 'No Frost', caracteristicas: 'Eficiente' },
+                    featured: false,
+                    discount: 0 
+                },
+                {
+                    id: 2,
+                    name: 'Nevera No Frost LG 330L',
+                    category: 'Refrigeración',
+                    price: 2050,
+                    image: 'https://www.alkosto.com/medias/8806096042700-001-750Wx750H?context=bWFzdGVyfGltYWdlc3wzNjg0fGltYWdlL3dlYnB8YURRNEwyZ3hNaTh4TkRVek9EZzFNamt5TlRRM01DODRPREEyTURrMk1EUXlOekF3WHpBd01WODNOVEJYZURjMU1FZ3xiYmE0ZTFmY2QwZjg4NDMyODFmOGFmM2U5MzUwNWQxOGI4NTQwZjg4OGI3ZjFlNWNiMDk0MjhiMWEyMzMzMGU4',
+                    description: 'Nevera No Frost de 330 litros con distribución uniforme del frío.',
+                    stock: 12,
+                    specs: { capacidad: '330 litros', tipo: 'No Frost', caracteristicas: 'Ahorro energético' },
+                    featured: true,
+                    discount: 10
+                },
+                {
+                    id: 3,
+                    name: 'Nevera Samsung 300L Inox',
+                    category: 'Refrigeración',
+                    price: 1900,
+                    image: 'https://images.samsung.com/is/image/samsung/latin-en-top-freezer-rtfg3050sem-rt29k500js8-ap-frontsilver-172565766?$Q90_1248_936_F_PNG$',
+                    description: 'Nevera en acero inoxidable con diseño moderno y congelador amplio.',
+                    stock: 10,
+                    specs: { capacidad: '300 litros', material: 'Acero inoxidable', caracteristicas: 'Control digital' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 4,
+                    name: 'Nevera Mabe 280L Color Plomo',
+                    category: 'Refrigeración',
+                    price: 2100,
+                    image: 'https://mabeglobal.com/medias/Mabe-Refrigeradores-305L-Ecopet-RMA305FYCT-Frente.jpg-515Wx515H?context=bWFzdGVyfGltYWdlc3wyOTA0OXxpbWFnZS9qcGVnfGFHRTBMMmd5Tmk4NU5EQTVOamMyTWpjNU9ETTRMMDFoWW1WZlVtVm1jbWxuWlhKaFpHOXlaWE5mTXpBMVRGOUZZMjl3WlhSZlVrMUJNekExUmxsRFZGOUdjbVZ1ZEdVdWFuQm5YelV4TlZkNE5URTFTQXwzMzJlNGQxY2RlMDQ3Mjk4OGVlYzU5ZWNjOWRlNmY4NDM5MzZjN2ZlNGQ0NzQwOGViNzFlMjVhYWJkMmI0YzZi',
+                    description: 'Diseño resistente y elegante en color plomo, con bajo consumo energético.',
+                    stock: 8,
+                    specs: { capacidad: '280 litros', color: 'Plomo', caracteristicas: 'Bajo consumo' },
+                    featured: true,
+                    discount: 15
+                },
+                {
+                    id: 5,
+                    name: 'Nevera No Frost Whirlpool 360L',
+                    category: 'Refrigeración',
+                    price: 1899,
+                    image: 'https://media.falabella.com/sodimacCO/331813/public',
+                    description: 'Amplia y eficiente, ideal para familias.',
+                    stock: 14,
+                    specs: { capacidad: '360 litros', tipo: 'No Frost', caracteristicas: 'Control de humedad' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 6,
+                    name: 'Nevera Haceb 220L',
+                    category: 'Refrigeración',
+                    price: 1399,
+                    image: 'https://hacebco.vtexassets.com/arquivos/ids/184738-800-800?v=638899377157470000&width=800&height=800&aspect=true',
+                    description: 'Nevera compacta convencional para hogares pequeños.',
+                    stock: 18,
+                    specs: { capacidad: '220 litros', eficiencia: 'A+', caracteristicas: 'Congelador superior' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 7,
+                    name: 'Nevera Challenger 300L Inox',
+                    category: 'Refrigeración',
+                    price: 1199,
+                    image: 'https://puntohogar.com.co/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MzIwMjIwLCJwdXIiOiJibG9iX2lkIn19--2e7c366db7b5beec6c08ac4081180d4a26c977e8/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJwbmciLCJyZXNpemVfdG9fZml0IjpbNjAwLDYwMF19LCJwdXIiOiJ2YXJpYXRpb24ifX0=--db42ba722be1e76788976c3dae164d352f833ae3/nueva-imagen%20(70).png?locale=es',
+                    description: 'Acabado de lujo en acero inoxidable.',
+                    stock: 12,
+                    specs: { capacidad: '300 litros', material: 'Inox', caracteristicas: 'Bajo ruido' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 8,
+                    name: 'Nevera Acros 250L',
+                    category: 'Refrigeración',
+                    price: 1259,
+                    image: 'https://http2.mlstatic.com/D_Q_NP_666085-MLA45129469569_032021-O.webp',
+                    description: 'Práctica y eficiente para uso diario.',
+                    stock: 15,
+                    specs: { capacidad: '250 litros', caracteristicas: 'Estantes ajustables' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 9,
+                    name: 'Nevera No Frost Samsung 380L',
+                    category: 'Refrigeración',
+                    price: 2499,
+                    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeXyj6ZRRseaN3NVYmVIv_aZolbvlwCH6Y1g&s',
+                    description: 'Mayor capacidad de enfriamiento.',
+                    stock: 10,
+                    specs: { capacidad: '380 litros', tecnologia: 'Digital Inverter', tipo: 'No Frost' },
+                    featured: true,
+                    discount: 0
+                },
+                {
+                    id: 10,
+                    name: 'Nevera Inox Whirlpool 400L',
+                    category: 'Refrigeración',
+                    price: 4599,
+                    image: 'https://www.electromax.com.py/storage/6702_1.png',
+                    description: 'Gran capacidad y diseño elegante.',
+                    stock: 6,
+                    specs: { capacidad: '400 litros', material: 'Acero inoxidable', caracteristicas: 'Antihuellas' },
+                    featured: true,
+                    discount: 8
+                },
+                {
+                    id: 11,
+                    name: 'Nevera Plomo Mabe 320L',
+                    category: 'Refrigeración',
+                    price: 2899,
+                    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTr0RnfaS4kls7RWxsH6w7LsdVQp6_IuQLKPQ&s',
+                    description: 'Acabado plomo moderno.',
+                    stock: 9,
+                    specs: { capacidad: '320 litros', color: 'Plomo', caracteristicas: 'Silenciosa' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 12,
+                    name: 'Nevera No Frost LG 410L',
+                    category: 'Refrigeración',
+                    price: 4499,
+                    image: 'https://www.lg.com/content/dam/channel/wcms/co/images/neveras/gt41sgpx_apzcclm_escb_co_c/gallery/large01.jpg?w=800',
+                    description: 'Consumo optimizado.',
+                    stock: 7,
+                    specs: { capacidad: '410 litros', tecnologia: 'Door Cooling', tipo: 'No Frost' },
+                    featured: true,
+                    discount: 12
+                },
+                {
+                    id: 13,
+                    name: 'Nevera Convencional Challenger 240L',
+                    category: 'Refrigeración',
+                    price: 1249,
+                    image: 'https://www.superelectroriente.com.co/wp-content/uploads/2023/03/SEO-64-1.png',
+                    description: 'Modelo compacto con bandejas de vidrio templado.',
+                    stock: 16,
+                    specs: { capacidad: '240 litros', caracteristicas: 'Vidrio templado, Eficiente' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 14,
+                    name: 'Nevera Inox LG 350L',
+                    category: 'Refrigeración',
+                    price: 3259,
+                    image: 'https://www.lg.com/content/dam/channel/wcms/co/images/neveras/vt40agpx_apzcclm_escb_co_c/DZ-13.jpg',
+                    description: 'Estantes reforzados y control digital.',
+                    stock: 11,
+                    specs: { capacidad: '350 litros', material: 'Inox', caracteristicas: 'Iluminación LED' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 15,
+                    name: 'Nevera Plomo Haceb 300L',
+                    category: 'Refrigeración',
+                    price: 2199.99,
+                    image: 'https://exitocol.vteximg.com.br/arquivos/ids/2502453/nevera-haceb-asf-300l-se-2p-asf-300-lts-se.jpg?v=637299907306630000',
+                    description: 'Diseño moderno en color plomo.',
+                    stock: 13,
+                    specs: { capacidad: '300 litros', color: 'Plomo', caracteristicas: 'Ahorro energético' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 16,
+                    name: 'Nevera Convencional Haceb 260L',
+                    category: 'Refrigeración',
+                    price: 1400,
+                    image: 'https://http2.mlstatic.com/D_NQ_NP_2X_814037-MLA95674808678_102025-T.webp',
+                    description: 'Nevera de 260 litros con congelador superior, bajo consumo y diseño compacto.',
+                    stock: 15,
+                    specs: { capacidad: '260 litros', tipo: 'Convencional', caracteristicas: 'Bajo consumo, Congelador superior' },
+                    featured: true,
+                    discount: 0
+                },
+                
+                // LAVADORAS
+                {
+                    id: 17,
+                    name: 'Lavadora Semiautomática Haceb 14kg',
+                    category: 'Lavandería',
+                    price: 959,
+                    image: 'https://olimpica.vtexassets.com/arquivos/ids/1293359-800-450?v=638418991287800000&width=800&height=450&aspect=true',
+                    description: 'Doble tina con excelente rendimiento.',
+                    stock: 20,
+                    specs: { capacidad: '14kg', tipo: 'Semiautomática', caracteristicas: 'Doble tina, Bajo consumo' },
+                    featured: true,
+                    discount: 5
+                },
+                {
+                    id: 18,
+                    name: 'Lavadora Automática LG 18kg',
+                    category: 'Lavandería',
+                    price: 1599.99,
+                    image: 'https://www.lg.com/content/dam/channel/wcms/co/images/lavadorasysecadoras/wt18dsb_asfecol_escb_co_c/gallery/450.jpg',
+                    description: 'Múltiples programas de lavado.',
+                    stock: 15,
+                    specs: { capacidad: '18kg', tipo: 'Automática', caracteristicas: 'Direct Drive, 8 programas' },
+                    featured: true,
+                    discount: 10
+                },
+                {
+                    id: 19,
+                    name: 'Lavadora Semiautomática Mabe 13kg',
+                    category: 'Lavandería',
+                    price: 949.99,
+                    image: 'https://www.alkomprar.com/medias/757638389877-001-750Wx750H?context=bWFzdGVyfGltYWdlc3wxNDI4NnxpbWFnZS93ZWJwfGFHRXdMMmc0TWk4eE5UTTJNREl3TVRFMk1qYzRNaTgzTlRjMk16Z3pPRGs0TnpkZk1EQXhYemMxTUZkNE56VXdTQXw0ZmY2ZTk4YWI4ZmI3NTNjMTQzZDRkNDNkMWMzMjUzZTAyZjNiMDdmOTM1YTAzODBhOTVhMzhhZGQ2YTg3ZmUy',
+                    description: 'Práctica y económica.',
+                    stock: 18,
+                    specs: { capacidad: '13kg', tipo: 'Semiautomática', caracteristicas: 'Doble tina, Ahorro energético' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 20,
+                    name: 'Lavadora Automática Samsung 19kg',
+                    category: 'Lavandería',
+                    price: 1999.99,
+                    image: 'https://www.alkosto.com/medias/8806095362762-001-750Wx750H?context=bWFzdGVyfGltYWdlc3w2MTkyfGltYWdlL3dlYnB8YURWakwyZzRaUzh4TkRVNE16RTRPVEF4TWpVeE1DODRPREEyTURrMU16WXlOell5WHpBd01WODNOVEJYZURjMU1FZ3wzNjE0M2E2ZDMzYmZkZDg5ZjRjNjRlMDI5MDc4ZDlkNDU5N2M5ODVmNzljOTdhYjU1ZmM0ODAwODRiOTNlZWFm',
+                    description: 'Tecnología de burbujas y gran capacidad.',
+                    stock: 12,
+                    specs: { capacidad: '19kg', tipo: 'Automática', caracteristicas: 'Digital Inverter, EcoBubble' },
+                    featured: true,
+                    discount: 8
+                },
+                {
+                    id: 21,
+                    name: 'Lavadora Automática Mabe 16kg',
+                    category: 'Lavandería',
+                    price: 2299.99,
+                    image: 'https://mabeglobal.com/medias/Mabe-Lavadora-Automatica-16-kg-Diamond-Gray-LMC46100WDAB0-Frente.jpg-1200Wx1200H?context=bWFzdGVyfGltYWdlc3w0NDUyMXxpbWFnZS9qcGVnfGFEWTRMMmd3TlM4NU16ZzRNemszTURNMU5UVXdMMDFoWW1VdFRHRjJZV1J2Y21FdFFYVjBiMjFoZEdsallTMHhOaTFyWnkxRWFXRnRiMjVrTFVkeVlYa3RURTFETkRZeE1EQlhSRUZDTUMxR2NtVnVkR1V1YW5Cblh6RXlNREJYZURFeU1EQkl8NWVjMzRlNzI5MjhjZDM1NWQ2ODI3YmRkNDM4MGMyZDY2MzQ1MzA1MDQ1YWFiN2I2NzY2M2NiYWM3ZjFkN2JhZgv',
+                    description: 'Silenciosa y eficiente.',
+                    stock: 14,
+                    specs: { capacidad: '16kg', tipo: 'Automática', caracteristicas: 'Control digital, Carga superior' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 22,
+                    name: 'Lavadora Automática Whirlpool 15kg',
+                    category: 'Lavandería',
+                    price: 2999.99,
+                    image: 'https://www.alkosto.com/medias/7708228051257-001-750Wx750H?context=bWFzdGVyfGltYWdlc3wxMTE0MHxpbWFnZS93ZWJwfGFEVTVMMmd3Tmk4eE5UQXpPVFkzTURrM05qVTBNaTgzTnpBNE1qSTRNRFV4TWpVM1h6QXdNVjgzTlRCWGVEYzFNRWd8ZjdiODFlMTliNmEwN2FkYmUyODkzM2Y3YjI1MTllNjIzNTUzODVjYjEwYTI1MmQ0MzRiZDVjYWJlNDUzZTY0YQ',
+                    description: 'Ahorro energético y agitador mejorado.',
+                    stock: 11,
+                    specs: { capacidad: '15kg', caracteristicas: 'Agitador, Eficiente' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 23,
+                    name: 'Lavadora Semiautomática LG 11kg',
+                    category: 'Lavandería',
+                    price: 999,
+                    image: 'https://www.lg.com/cac/images/lavadoras-y-secadoras/wp-1460r/gallery/large01.jpg',
+                    description: 'Excelente rendimiento.',
+                    stock: 17,
+                    specs: { capacidad: '11kg', caracteristicas: 'Bajo ruido, Resistente' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 24,
+                    name: 'Lavadora Automática Samsung 14kg',
+                    category: 'Lavandería',
+                    price: 1999.99,
+                    image: 'https://images.samsung.com/is/image/samsung/latin-top-loader-wa14f5l2udy-wa14f5l2udy-ap-001-front?$624_624_PNG$',
+                    description: 'Mejor lavado con EcoBubble.',
+                    stock: 13,
+                    specs: { capacidad: '14kg', caracteristicas: 'EcoBubble, Ahorro energético' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 25,
+                    name: 'Lavadora Automática Haceb 19kg',
+                    category: 'Lavandería',
+                    price: 888.99,
+                    image: 'https://images.samsung.com/is/image/samsung/latin-top-loader-wa14f5l2udy-wa14f5l2udy-ap-001-front?$624_624_PNG$',
+                    description: 'Programas inteligentes.',
+                    stock: 16,
+                    specs: { capacidad: '19kg', caracteristicas: 'Programas inteligentes, Eficiente' },
+                    featured: false,
+                    discount: 0
+                },
+
+                // ESTUFAS
+                {
+                    id: 26,
+                    name: 'Estufa de 2 Puestos de empotrar Challenger',
+                    category: 'Cocina',
+                    price: 700.50,
+                    image: 'https://challengerco.vteximg.com.br/arquivos/ids/159108-1000-1000/SQ6730_1.jpg?v=637631963227770000',
+                    description: 'Compacta, ideal para espacios pequeños.',
+                    stock: 25,
+                    specs: { puestos: '2', tipo: 'Empotrar', caracteristicas: 'Fácil limpieza, Encendido manual' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 27,
+                    name: 'Estufa de 4 Puestos Haceb',
+                    category: 'Cocina',
+                    price: 350,
+                    image: 'https://www.alkosto.com/medias/7704353372571-001-750Wx750H?context=bWFzdGVyfGltYWdlc3wxNjU3NnxpbWFnZS93ZWJwfGFESmxMMmhqWmk4eE5EWXlPREkzTVRZNE5UWTJNaTgzTnpBME16VXpNemN5TlRjeFh6QXdNVjgzTlRCWGVEYzFNRWd8OWJjYjhlMzAwNDg3ZmNmZDgwMjMyZDY4NGM2NmExNDY2NGNhOWVmMTUxNTYzODMwZTA0Y2NhY2JlMjEzMTExMQ',
+                    description: 'Quemadores de alto rendimiento.',
+                    stock: 18,
+                    specs: { puestos: '4', combustible: 'Gas propano', caracteristicas: 'Encendido automático' },
+                    featured: true,
+                    discount: 8
+                },
+                {
+                    id: 28,
+                    name: 'Estufa con Horno Mabe',
+                    category: 'Cocina',
+                    price: 1130,
+                    image: 'https://soelco.co/wp-content/uploads/TX1G-6CON_01.webp',
+                    description: 'Horno a gas con buena distribución de calor.',
+                    stock: 10,
+                    specs: { puestos: '4', tipo: 'Con horno', caracteristicas: 'Horno a gas, Luz interior' },
+                    featured: true,
+                    discount: 12
+                },
+                {
+                    id: 29,
+                    name: 'Estufa con Gabinete Abba',
+                    category: 'Cocina',
+                    price: 670,
+                    image: 'https://abba.com.co/wp-content/uploads/2022/03/estufa-de-piso-con-gabinete-abba-at-100-5-ql-gas-4-puestos-quemador-en-lamina.jpg',
+                    description: 'Con gabinete integrado.',
+                    stock: 14,
+                    specs: { puestos: '4', caracteristicas: 'Gabinete incluido, Práctica' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 30,
+                    name: 'Estufa con Gratinado Acros',
+                    category: 'Cocina',
+                    price: 850,
+                    image: 'https://http2.mlstatic.com/D_NQ_NP_860729-MLA44179273980_112020-O.webp',
+                    description: 'Parrilla eléctrica para gratinado uniforme.',
+                    stock: 9,
+                    specs: { puestos: '4', caracteristicas: 'Gratinador eléctrico, Horno amplio' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 31,
+                    name: 'Estufa de Empotrar Eléctrica Challenger 2 Puestos',
+                    category: 'Cocina',
+                    price: 549,
+                    image: 'https://korattisas.com/wp-content/uploads/2021/07/ESTUFA-DE-EMPOTRAR-ELECTRICA-CHALLENGER-35X43.5-120-V-ACERO-INOXIDABLE-FRENTE-1.jpg',
+                    description: 'Económica y compacta.',
+                    stock: 22,
+                    specs: { puestos: '2', tipo: 'Eléctrica', caracteristicas: 'Segura' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 32,
+                    name: 'Estufa Eléctrica Abba 1 Puesto',
+                    category: 'Cocina',
+                    price: 100,
+                    image: 'https://www.alkosto.com/medias/7706060012009-001-750Wx750H?context=bWFzdGVyfGltYWdlc3wxMzcwMzZ8aW1hZ2UvanBlZ3xhVzFoWjJWekwyaG1NeTlvTldRdk1UQTFOakU1TmprME5UVXhNelF1YW5CbnxmYzgwNTJhMGIyNjExODI4OGZjNDRkYjk0MGQ5ZmM4ZGQyNjcyMjYwMGM0MjUzODUzZjViYzFmZmEzYTJkODkz',
+                    description: 'Ideal para uso ocasional.',
+                    stock: 30,
+                    specs: { puestos: '1', tipo: 'Eléctrica', caracteristicas: 'Eficiente, Resistente' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 33,
+                    name: 'Estufa Gas Propano Haceb',
+                    category: 'Cocina',
+                    price: 299.99,
+                    image: 'https://hacebco.vtexassets.com/arquivos/ids/176051-800-800?v=638762029154800000&width=800&height=800&aspect=true',
+                    description: 'Diseñada para cilindro de gas.',
+                    stock: 19,
+                    specs: { puestos: '4', combustible: 'Propano', caracteristicas: 'Fácil limpieza' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 34,
+                    name: 'Estufa Gas Natural Mabe',
+                    category: 'Cocina',
+                    price: 1399,
+                    image: 'https://www.credinorte.com.co/wp-content/uploads/2020/06/38.jpg',
+                    description: 'Quemadores de alta potencia.',
+                    stock: 11,
+                    specs: { combustible: 'Gas natural', caracteristicas: 'Quemadores potentes, Horno a gas' },
+                    featured: false,
+                    discount: 0
+                },
+                {
+                    id: 35,
+                    name: 'Estufa Abba Clásica 4 Puestos',
+                    category: 'Cocina',
+                    price: 1550,
+                    image: 'https://abba.com.co/wp-content/uploads/2022/03/w7a3129.jpg',
+                    description: 'Tapa de vidrio y horno.',
+                    stock: 12,
+                    specs: { puestos: '4', caracteristicas: 'Horno, Tapa de vidrio' },
+                    featured: false,
+                    discount: 0
+                },
+
+                // MICROONDAS
+                {
+                    id: 36,
+                    name: 'Microondas Haceb 20L',
+                    category: 'Pequeños Electrodomésticos',
+                    price: 569,
+                    image: 'https://http2.mlstatic.com/D_NQ_NP_829327-MLA49201325568_022022-O.webp',
+                    description: 'Compacto de 20 litros.',
+                    stock: 30,
+                    specs: { capacidad: '20L', caracteristicas: '6 niveles de potencia' },
+                    featured: false,
+                    discount: 0
+                },
+                    {
+                        id: 37,
+                        name: 'Microondas LG 23L Digital',
+                        category: 'Pequeños Electrodomésticos',
+                        price: 400,
+                        image: 'https://www.lg.com/ar/images/microondas/ms2349s/gallery/large01.jpg',
+                        description: 'Control digital con descongelamiento rápido.',
+                        stock: 25,
+                        specs: {
+                            capacidad: '23L',
+                            tipo: 'Digital',
+                            caracteristicas: 'Descongelamiento rápido'
+                        },
+                        featured: true,
+                        discount: 15
+                    },
+                    {
+                        id: 38,
+                        name: 'Microondas Samsung 30L Grill',
+                        category: 'Pequeños Electrodomésticos',
+                        price: 731,
+                        image: 'https://images.samsung.com/is/image/samsung/ph-mw5000t-mg30t5018cc-tc-frontcottacharcoal-thumb-285761872',
+                        description: 'Incluye grill y modo Eco.',
+                        stock: 20,
+                        specs: {
+                            capacidad: '30L',
+                            caracteristicas: 'Grill, Eco Mode'
+                        },
+                        featured: false,
+                        discount: 0
+                    },
+                    // PLANCHAS
+                    {
+                        id: 39,
+                        name: 'Plancha Oster Vapor',
+                        category: 'Pequeños Electrodomésticos',
+                        price: 70,
+                        image: 'https://osterco.vtexassets.com/arquivos/ids/165857/GCSTBS5004_01.jpg?v=638558127096570000',
+                        description: 'Base antiadherente con vapor continuo.',
+                        stock: 40,
+                        specs: {
+                            tipo: 'Vapor',
+                            caracteristicas: 'Base cerámica, Vapor continuo'
+                        },
+                        featured: false,
+                        discount: 0
+                    },
+                    {
+                        id: 40,
+                        name: 'Plancha Black & Decker Turbo',
+                        category: 'Pequeños Electrodomésticos',
+                        price: 200,
+                        image: 'https://www.alkosto.com/medias/050875823051-001-750Wx750H?context=bWFzdGVyfGltYWdlc3wzMzk5OHxpbWFnZS9qcGVnfGFXMWhaMlZ6TDJneFlTOW9PR1l2T1RBMk5Ua3hNREEzTlRReU1pNXFjR2N8MDk4NWM4MzA1NjI2OTllOGNlYzMzYTY2M2U5YzAxNDk4OTA5NTMyODU4ZDlkNTVhMzJlNGRkNDUxNzQ4MzBhNA',
+                        description: 'Turbo para arrugas difíciles con auto apagado.',
+                        stock: 35,
+                        specs: {
+                            tipo: 'Vapor turbo',
+                            caracteristicas: 'Auto apagado, Vapor turbo'
+                        },
+                        featured: true,
+                        discount: 10
+                    },
+                    // SANDWICHERAS
+                    {
+                        id: 41,
+                        name: 'Sandwichera Oster 2 Puestos',
+                        category: 'Pequeños Electrodomésticos',
+                        price: 99.90,
+                        image: 'https://www.alkosto.com/medias/034264467026-001-750Wx750H?context=bWFzdGVyfGltYWdlc3wxMzE2NHxpbWFnZS93ZWJwfGFESm1MMmhqTkM4eE5EYzNNVFkzTnpJMk5UazFNQzh3TXpReU5qUTBOamN3TWpaZk1EQXhYemMxTUZkNE56VXdTQXw1YWJkNjg5YTc3MDFjNDYyMjAwOTM2ZDlkMDNlNzdiYjcyZDc5NjU5MDUwNGEwYTA0YmIxMjgwMWY4MDJiZTMz',
+                        description: 'Preparación rápida y antiadherente.',
+                        stock: 50,
+                        specs: {
+                            capacidad: '2 puestos',
+                            caracteristicas: 'Antiadherente'
+                        },
+                        featured: false,
+                        discount: 0
+                    },
+                    {
+                        id: 42,
+                        name: 'Sandwichera Black+Decker Doble',
+                        category: 'Pequeños Electrodomésticos',
+                        price: 65.90,
+                        image: 'https://media.falabella.com/falabellaCO/2184405_1/w=1500,h=1500,fit=pad',
+                        description: 'Compacta y práctica.',
+                        stock: 45,
+                        specs: {
+                            capacidad: 'Doble puesto',
+                            caracteristicas: 'Compacta'
+                        },
+                        featured: false,
+                        discount: 0
+                    },
+                    // AIRFRYERS
+                    {
+                        id: 43,
+                        name: 'Airfryer Oster 3.2L',
+                        category: 'Pequeños Electrodomésticos',
+                        price: 360,
+                        image: 'https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcQbNFgx6I1Ria2eo1RpBJS8hdWKvIYCI9r63_K_P-Vbq8dxJrcsmelKje13OqWCScrF4LpMPz9i84mAfs5EDyQa3nkH_ZmcRu8LEbZwHGwmXnpAtVgL4PGgww',
+                        description: 'Compacta y rápida con control de temperatura.',
+                        stock: 28,
+                        specs: {
+                            capacidad: '3.2L',
+                            caracteristicas: 'Control de temperatura'
+                        },
+                        featured: true,
+                        discount: 20
+                    },
+                    {
+                        id: 44,
+                        name: 'Airfryer Black+Decker 4L',
+                        category: 'Pequeños Electrodomésticos',
+                        price: 400,
+                        image: 'https://gobachi.com/wp-content/uploads/2-405.png',
+                        description: 'Para familias pequeñas con temporizador.',
+                        stock: 22,
+                        specs: {
+                            capacidad: '4L',
+                            caracteristicas: 'Temporizador'
+                        },
+                        featured: true,
+                        discount: 15
+                    },
+                    // EQUIPOS DE SONIDO
+                    {
+                        id: 45,
+                        name: 'Parlante Bluetooth JBL GO',
+                        category: 'Sonido',
+                        price: 240,
+                        image: 'https://www.alkosto.com/medias/1200130009372-001-750Wx750H?context=bWFzdGVyfGltYWdlc3w0MDcxOHxpbWFnZS93ZWJwfGFEa3hMMmcyT1M4eE5EYzNOalU1T1RFNE16TTVNQzh4TWpBd01UTXdNREE1TXpjeVh6QXdNVjgzTlRCWGVEYzFNRWd8MjAxMWI1ZWEyM2Q2ZTY0Y2JkNmMwNWViNTA4YTc2ZWEzM2VkNjQ3MzUwNDU5YjY4ODhhNGNmZTQwM2ZmNzYwOQ',
+                        description: 'Compacto y potente, recargable.',
+                        stock: 35,
+                        specs: {
+                            tipo: 'Bluetooth',
+                            caracteristicas: 'Recargable'
+                        },
+                        featured: false,
+                        discount: 0
+                    },
+                    {
+                        id: 46,
+                        name: 'Parlante LG XBoom Mini',
+                        category: 'Sonido',
+                        price: 349,
+                        image: 'https://media.falabella.com/falabellaCO/72936276_1/w=1500,h=1500,fit=pad',
+                        description: 'Sonido envolvente con luz LED.',
+                        stock: 20,
+                        specs: {
+                            tipo: 'Bluetooth',
+                            caracteristicas: 'Luz LED'
+                        },
+                        featured: true,
+                        discount: 10
+                    },
+                    {
+                        id: 47,
+                        name: 'Torre de Sonido Samsung Party',
+                        category: 'Sonido',
+                        price: 1499.90,
+                        image: 'https://media.falabella.com/falabellaCO/5140319_1/w=800,h=800,fit=pad',
+                        description: 'Gran potencia con subwoofer.',
+                        stock: 8,
+                        specs: {
+                            tipo: 'Torre',
+                            caracteristicas: 'Subwoofer'
+                        },
+                        featured: true,
+                        discount: 18
+                    },
+                    // VENTILADORES
+                    {
+                        id: 48,
+                        name: 'Ventilador Oster Turbo 18"',
+                        category: 'Climatización',
+                        price: 300,
+                        image: 'https://http2.mlstatic.com/D_NQ_NP_804011-MLU77808205794_072024-O.webp',
+                        description: 'Ventilador de pedestal con 3 velocidades.',
+                        stock: 25,
+                        specs: {
+                            tamaño: '18 pulgadas',
+                            caracteristicas: '3 velocidades'
+                        },
+                        featured: false,
+                        discount: 0
+                    },
+                    {
+                        id: 49,
+                        name: 'Ventilador Imusa Power Breeze 16"',
+                        category: 'Climatización',
+                        price: 400,
+                        image: 'https://cheapshopping.com.co/wp-content/uploads/sites/25/2023/07/VENTILADOR-IMUSA-TURBO-SILENCE-2-EN-1-B.jpg',
+                        description: 'Pedestal con oscilación automática.',
+                        stock: 18,
+                        specs: {
+                            tamaño: '16 pulgadas',
+                            caracteristicas: 'Oscilación automática, 3 velocidades'
+                        },
+                        featured: true,
+                        discount: 12
+                    }
+                ];
+
+                // Guardar datos iniciales en Google Sheets
+                for (const category of this.categories) {
+                    await this.apiRequest('create', 'categories', category);
+                }
+
+                for (const product of this.products) {
+                    await this.apiRequest('create', 'products', product);
+                }
+
+                // Crear usuarios de ejemplo
+                await this.apiRequest('create', 'users', {
+                    name: 'Administrador',
+                    email: 'admin@electrohogar.com',
+                    password: 'admin123',
+                    role: 'admin',
+                    phone: '+34 900 123 456',
+                    addresses: []
+                });
+
+                await this.apiRequest('create', 'users', {
+                    name: 'Cliente Demo',
+                    email: 'cliente@demo.com',
+                    password: 'cliente123',
+                    role: 'client',
+                    phone: '+34 600 000 000',
+                    addresses: [{
+                        street: 'Calle Principal 123',
+                        city: 'Cordoba',
+                        postalCode: '28001',
+                        country: 'Colombia'
+                    }]
+                });
+            },
+
+            async showSection(section) {
+                this.currentSection = section;
+                const content = document.getElementById('main-content');
+                
+                // Mostrar indicador de carga
+                content.innerHTML = `
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <div class="flex justify-center items-center h-64">
+                            <i class="fas fa-spinner loading text-6xl text-blue-600"></i>
+                        </div>
+                    </div>
+                `;
+                
+                try {
+                    await this.loadData(); // Refrescar datos
+                    
+                    switch(section) {
+                        case 'home':
+                            content.innerHTML = this.renderHome();
+                            break;
+                        case 'products':
+                            content.innerHTML = this.renderProducts();
+                            break;
+                        case 'product-detail':
+                            content.innerHTML = this.renderProductDetail();
+                            break;
+                        case 'cart':
+                            content.innerHTML = this.renderCart();
+                            break;
+                        case 'checkout':
+                            content.innerHTML = this.renderCheckout();
+                            break;
+                        case 'wishlist':
+                            content.innerHTML = this.renderWishlist();
+                            break;
+                        case 'profile':
+                            content.innerHTML = this.renderProfile();
+                            break;
+                        case 'orders':
+                            content.innerHTML = this.renderOrders();
+                            break;
+                        case 'admin':
+                            content.innerHTML = this.renderAdminDashboard();
+                            break;
+                        case 'admin-products':
+                            content.innerHTML = this.renderAdminProducts();
+                            break;
+                        case 'admin-orders':
+                            content.innerHTML = this.renderAdminOrders();
+                            break;
+                        case 'admin-users':
+                            content.innerHTML = this.renderAdminUsers();
+                            break;
+                        case 'about':
+                            content.innerHTML = this.renderAbout();
+                            break;
+                        case 'contact':
+                            content.innerHTML = this.renderContact();
+                            break;
+                        default:
+                            content.innerHTML = this.renderHome();
+                    }
+                } catch (error) {
+                    console.error('Error loading section:', error);
+                    content.innerHTML = `
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                            <div class="text-center py-16">
+                                <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+                                <h3 class="text-2xl font-semibold text-gray-600 mb-4">Error al cargar</h3>
+                                <button onclick="app.showSection('home')" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                                    Volver al inicio
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                window.scrollTo(0, 0);
+            },
+
+                        renderUserMenu() {
+                const container = document.getElementById('user-menu-container');
+                if (this.currentUser) {
+                    container.innerHTML = `
+                        <div class="relative group">
+                            <button class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition">
+                                <i class="fas fa-user-circle text-2xl"></i>
+                                <span class="hidden md:block font-medium">${this.currentUser.name}</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 hidden group-hover:block">
+                                ${this.currentUser.role === 'admin' ? `
+                                    <a onclick="app.showSection('admin')" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer">
+                                        <i class="fas fa-tachometer-alt mr-2"></i> Dashboard Admin
+                                    </a>
+                                ` : ''}
+                                <a onclick="app.showSection('profile')" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer">
+                                    <i class="fas fa-user mr-2"></i> Mi Perfil
+                                </a>
+                                <a onclick="app.showSection('orders')" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer">
+                                    <i class="fas fa-box mr-2"></i> Mis Pedidos
+                                </a>
+                                <hr class="my-2">
+                                <a onclick="app.logout()" class="block px-4 py-2 text-red-600 hover:bg-gray-100 cursor-pointer">
+                                    <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <button onclick="app.showLoginModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            Iniciar Sesión
+                        </button>
+                    `;
+                }
+            },
+            renderHome() {
+                const featuredProducts = this.products.filter(p => p.featured).slice(0, 4);
+                const flashProducts = this.products.filter(p => p.discount >= 15).slice(0, 4);
+                
+                return `
+                    <!-- Hero Section -->
+                    <div class="hero-gradient text-white py-20">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div class="grid md:grid-cols-2 gap-12 items-center">
+                                <div>
+                                    <h1 class="text-5xl font-bold mb-6">Los Mejores Electrodomésticos para tu Hogar</h1>
+                                    <p class="text-xl mb-8 text-blue-100">Calidad, innovación y los mejores precios del mercado</p>
+                                    <div class="flex space-x-4">
+                                        <button onclick="app.showSection('products')" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition flex items-center">
+                                            <i class="fas fa-shopping-cart mr-2"></i> Ver Catálogo
+                                        </button>
+                                        <button onclick="app.showSection('about')" class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition flex items-center">
+                                            <i class="fas fa-info-circle mr-2"></i> Conocer Más
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block">
+                                    <img src="https://images.unsplash.com/photo-1556911220-bff31c812dba?w=600" alt="Electrodomésticos" class="rounded-lg shadow-2xl">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Features -->
+                    <div class="py-16 bg-white">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div class="grid md:grid-cols-4 gap-8">
+                                <div class="text-center">
+                                    <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-shipping-fast text-2xl text-blue-600"></i>
+                                    </div>
+                                    <h3 class="font-semibold mb-2">Envío Gratis</h3>
+                                    <p class="text-gray-600 text-sm">En compras mayores a $1'500.000</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-shield-alt text-2xl text-green-600"></i>
+                                    </div>
+                                    <h3 class="font-semibold mb-2">Garantía Extendida</h3>
+                                    <p class="text-gray-600 text-sm">Hasta 12 meses en productos seleccionados</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-headset text-2xl text-purple-600"></i>
+                                    </div>
+                                    <h3 class="font-semibold mb-2">Soporte 24/7</h3>
+                                    <p class="text-gray-600 text-sm">Atención al cliente siempre disponible con MIA</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-undo text-2xl text-yellow-600"></i>
+                                    </div>
+                                    <h3 class="font-semibold mb-2">Devolución Fácil</h3>
+                                    <p class="text-gray-600 text-sm">30 días para devoluciones</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ofertas Relámpago -->
+                    <div class="flash-sale py-16 text-white">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div class="flex flex-col md:flex-row justify-between items-center mb-12">
+                                <h2 class="text-4xl font-bold mb-4 md:mb-0">⚡ Ofertas Relámpago</h2>
+                                <div class="flex items-center space-x-4 bg-white/20 p-4 rounded-lg">
+                                    <div class="text-center">
+                                        <div class="countdown-timer text-3xl" id="countdown-hours">24</div>
+                                        <div class="text-sm">Horas</div>
+                                    </div>
+                                    <div class="text-2xl">:</div>
+                                    <div class="text-center">
+                                        <div class="countdown-timer text-3xl" id="countdown-minutes">59</div>
+                                        <div class="text-sm">Minutos</div>
+                                    </div>
+                                    <div class="text-2xl">:</div>
+                                    <div class="text-center">
+                                        <div class="countdown-timer text-3xl" id="countdown-seconds">59</div>
+                                        <div class="text-sm">Segundos</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                                ${flashProducts.length > 0 ? flashProducts.map(product => this.renderProductCard(product)).join('') : `
+                                    <div class="col-span-full text-center py-8">
+                                        <p class="text-xl">No hay ofertas disponibles en este momento</p>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Categories -->
+                    <div class="py-16 bg-gray-50">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <h2 class="text-3xl font-bold text-center mb-12">Nuestras Categorías</h2>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                                ${this.categories.map(cat => `
+                                    <div onclick="app.filterByCategory('${cat.name}')" class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition cursor-pointer text-center trust-badge">
+                                        <i class="fas ${cat.icon} text-4xl text-blue-600 mb-4"></i>
+                                        <h3 class="font-semibold text-sm">${cat.name}</h3>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Featured Products -->
+                    <div class="py-16 bg-white">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div class="flex justify-between items-center mb-12">
+                                <h2 class="text-3xl font-bold">Productos Destacados</h2>
+                                <button onclick="app.showSection('products')" class="text-blue-600 hover:text-blue-700 font-semibold flex items-center">
+                                    Ver todos <i class="fas fa-arrow-right ml-2"></i>
+                                </button>
+                            </div>
+                            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                                ${featuredProducts.map(product => this.renderProductCard(product)).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Garantía de Confianza -->
+                    <div class="py-16 bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <h2 class="text-4xl font-bold text-center mb-12">✨ Confianza Garantizada</h2>
+                            <div class="grid md:grid-cols-4 gap-8">
+                                <div class="text-center trust-badge p-6">
+                                    <i class="fas fa-lock text-5xl mb-4"></i>
+                                    <h3 class="font-bold text-xl mb-2">Pago Seguro</h3>
+                                    <p class="opacity-90">SSL encriptado y protección antifraude</p>
+                                </div>
+                                <div class="text-center trust-badge p-6">
+                                    <i class="fas fa-medal text-5xl mb-4"></i>
+                                    <h3 class="font-bold text-xl mb-2">Calidad Certificada</h3>
+                                    <p class="opacity-90">Todos nuestros productos certificados</p>
+                                </div>
+                                <div class="text-center trust-badge p-6">
+                                    <i class="fas fa-handshake text-5xl mb-4"></i>
+                                    <h3 class="font-bold text-xl mb-2">Satisfacción Garantizada</h3>
+                                    <p class="opacity-90">30 días para devolución sin preguntas</p>
+                                </div>
+                                <div class="text-center trust-badge p-6">
+                                    <i class="fas fa-award text-5xl mb-4"></i>
+                                    <h3 class="font-bold text-xl mb-2">Premio Excelencia</h3>
+                                    <p class="opacity-90">Mejor servicio al cliente 2023</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonios -->
+                    <div class="py-16 bg-white">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <h2 class="text-3xl font-bold text-center mb-12">Lo que dicen nuestros clientes</h2>
+                            <div class="grid md:grid-cols-3 gap-8">
+                                <div class="bg-gray-50 p-6 rounded-xl shadow-md">
+                                    <div class="flex items-center mb-4">
+                                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                                            <i class="fas fa-user text-blue-600"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold">Ana García</h4>
+                                            <div class="star-rating">
+                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-700 italic">"Excelente servicio y productos de calidad. Mi nevera llegó en perfecto estado."</p>
+                                </div>
+                                <div class="bg-gray-50 p-6 rounded-xl shadow-md">
+                                    <div class="flex items-center mb-4">
+                                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                                            <i class="fas fa-user text-green-600"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold">Carlos López</h4>
+                                            <div class="star-rating">
+                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star"></i>
+                                                <i class="far fa-star"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-700 italic">"La lavadora que compré ha sido la mejor inversión para mi hogar. ¡Recomendado!"</p>
+                                </div>
+                                <div class="bg-gray-50 p-6 rounded-xl shadow-md">
+                                    <div class="flex items-center mb-4">
+                                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                                            <i class="fas fa-user text-purple-600"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold">María Rodríguez</h4>
+                                            <div class="star-rating">
+                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star-half-alt"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-700 italic">"Atención al cliente increíble. Me ayudaron a elegir el mejor producto para mis necesidades."</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Newsletter -->
+                    <div class="gradient-bg py-16">
+                        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+                            <h2 class="text-3xl font-bold mb-4">Suscríbete a Nuestro Newsletter</h2>
+                            <p class="text-xl mb-8 opacity-90">Recibe ofertas exclusivas y novedades directamente en tu email</p>
+                            <div class="flex max-w-md mx-auto">
+                                <input type="email" placeholder="Tu email" class="flex-1 px-4 py-3 rounded-l-lg text-gray-900 focus:outline-none">
+                                <button class="bg-blue-900 text-white px-6 py-3 rounded-r-lg hover:bg-blue-800 transition font-semibold">
+                                    Suscribirse
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            startCountdown() {
+                // Inicializar contador de ofertas relámpago
+                const updateCountdown = () => {
+                    const now = new Date();
+                    const tomorrow = new Date(now);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    tomorrow.setHours(0, 0, 0, 0);
+                    
+                    const diff = tomorrow - now;
+                    
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    const hoursEl = document.getElementById('countdown-hours');
+                    const minutesEl = document.getElementById('countdown-minutes');
+                    const secondsEl = document.getElementById('countdown-seconds');
+                    
+                    if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
+                    if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
+                    if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
+                };
+                
+                updateCountdown();
+                setInterval(updateCountdown, 1000);
+            },
+
+            async saveProduct(product) {
+                try {
+                    this.showNotification('Guardando producto...', 'info');
+                    
+                    const action = product.id ? 'update' : 'create';
+                    const result = await this.apiRequest(action, 'products', product);
+                    
+                    if (result.success) {
+                        await this.loadData(); // Refrescar datos
+                        this.showNotification('✅ Producto guardado exitosamente', 'success');
+                        this.closeModal();
+                        return true;
+                    } else {
+                        this.showNotification('❌ Error al guardar el producto', 'error');
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('Error saving product:', error);
+                    this.showNotification('❌ Error al guardar el producto', 'error');
+                    return false;
+                }
+            },
+
+            showAddProductModal(product = null) {
+                const isEdit = !!product;
+                const modalContent = `
+                    <div class="bg-white rounded-lg p-8 max-w-2xl w-full max-h-screen overflow-y-auto">
+                        <h2 class="text-3xl font-bold mb-6">${isEdit ? '✏️ Editar Producto' : '➕ Nuevo Producto'}</h2>
+                        
+                        <form id="product-form" class="space-y-6">
+                            <input type="hidden" id="product-id" value="${isEdit ? product.id : ''}">
+                            
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Nombre *</label>
+                                    <input type="text" id="product-name" value="${isEdit ? product.name : ''}" 
+                                        required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Categoría *</label>
+                                    <select id="product-category" required 
+                                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Seleccionar categoría</option>
+                                        ${this.categories.map(cat => `
+                                            <option value="${cat.name}" ${isEdit && product.category === cat.name ? 'selected' : ''}>
+                                                ${cat.name}
+                                            </option>
+                                        `).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Precio ($) *</label>
+                                    <input type="number" id="product-price" step="0.01" value="${isEdit ? product.price : ''}" 
+                                        required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Stock *</label>
+                                    <input type="number" id="product-stock" value="${isEdit ? product.stock : ''}" 
+                                        required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Descuento (%)</label>
+                                    <input type="number" id="product-discount" min="0" max="100" 
+                                        value="${isEdit ? product.discount : 0}" 
+                                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Destacado</label>
+                                    <div class="flex items-center mt-2">
+                                        <input type="checkbox" id="product-featured" ${isEdit && product.featured ? 'checked' : ''}
+                                            class="w-5 h-5 text-blue-600 rounded">
+                                        <label for="product-featured" class="ml-2 text-sm text-gray-700">Marcar como producto destacado</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">URL de Imagen *</label>
+                                <input type="text" id="product-image" value="${isEdit ? product.image : ''}" 
+                                    required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="https://images.unsplash.com/photo-...">
+                                <div class="mt-2 text-xs text-gray-500">
+                                    Recomendado: usar imágenes de Unsplash (ej: https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=500)
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Descripción *</label>
+                                <textarea id="product-description" rows="3" required 
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">${isEdit ? product.description : ''}</textarea>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <label class="block text-sm font-medium mb-2">Especificaciones (JSON)</label>
+                                <textarea id="product-specs" rows="4" 
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm">${isEdit ? JSON.stringify(product.specs, null, 2) : '{\n  "capacidad": "",\n  "color": "",\n  "garantia": ""\n}'}</textarea>
+                                <div class="mt-2 text-xs text-gray-500">
+                                    Formato JSON. Ejemplo: {"capacidad": "500L", "color": "Acero inoxidable", "garantia": "2 años"}
+                                </div>
+                            </div>
+
+                            <div class="flex space-x-4 pt-4 border-t">
+                                <button type="submit" 
+                                    class="flex-1 btn-success text-white py-3 rounded-lg hover:opacity-90 transition font-semibold flex items-center justify-center">
+                                    <i class="fas fa-save mr-2"></i> Guardar Producto
+                                </button>
+                                <button type="button" onclick="app.closeModal()" 
+                                    class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition font-semibold">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+
+                this.showModal(modalContent);
+
+                // Manejar el envío del formulario
+                document.getElementById('product-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    try {
+                        let specs = {};
+                        try {
+                            specs = JSON.parse(document.getElementById('product-specs').value);
+                        } catch (error) {
+                            this.showNotification('Formato de especificaciones inválido', 'error');
+                            return;
+                        }
+
+                        const productData = {
+                            id: document.getElementById('product-id').value ? parseInt(document.getElementById('product-id').value) : null,
+                            name: document.getElementById('product-name').value,
+                            category: document.getElementById('product-category').value,
+                            price: parseFloat(document.getElementById('product-price').value),
+                            stock: parseInt(document.getElementById('product-stock').value),
+                            discount: parseInt(document.getElementById('product-discount').value) || 0,
+                            image: document.getElementById('product-image').value,
+                            description: document.getElementById('product-description').value,
+                            specs: specs,
+                            featured: document.getElementById('product-featured').checked
+                        };
+
+                        await this.saveProduct(productData);
+                    } catch (error) {
+                        console.error('Error saving product:', error);
+                        this.showNotification('Error al procesar el formulario', 'error');
+                    }
+                });
+            },
+
+            showDeleteConfirmation(productId, productName) {
+                const modalContent = `
+                    <div class="bg-white rounded-lg p-8 max-w-md w-full confirmation-dialog">
+                        <div class="text-center mb-6">
+                            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-2">¿Estás seguro?</h3>
+                            <p class="text-gray-600">Vas a eliminar el producto:</p>
+                            <p class="font-semibold text-lg mt-2">"${productName}"</p>
+                            <p class="text-red-600 text-sm mt-4">⚠️ Esta acción no se puede deshacer</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="app.confirmDeleteProduct(${productId})" 
+                                class="btn-danger text-white py-3 rounded-lg hover:opacity-90 transition font-semibold">
+                                <i class="fas fa-trash mr-2"></i> Sí, Eliminar
+                            </button>
+                            <button onclick="app.closeModal()" 
+                                class="bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition font-semibold">
+                                <i class="fas fa-times mr-2"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                this.showModal(modalContent);
+            },
+
+            async confirmDeleteProduct(productId) {
+                try {
+                    const result = await this.apiRequest('delete', 'products', { id: productId });
+                    
+                    if (result.success) {
+                        this.showNotification('✅ Producto eliminado exitosamente', 'success');
+                        await this.loadData(); // Refrescar datos
+                        this.closeModal();
+                        this.showSection('admin-products');
+                    } else {
+                        this.showNotification('❌ Error al eliminar el producto', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting product:', error);
+                    this.showNotification('❌ Error al eliminar el producto', 'error');
+                }
+            },
+
+            renderAdminProducts() {
+                if (!this.currentUser || this.currentUser.role !== 'admin') {
+                    this.showNotification('Acceso denegado', 'error');
+                    this.showSection('home');
+                    return '';
+                }
+
+                return `
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <div class="flex justify-between items-center mb-8">
+                            <h1 class="text-4xl font-bold">📦 Gestión de Productos</h1>
+                            <button onclick="app.showAddProductModal()" 
+                                class="btn-success text-white px-6 py-3 rounded-lg hover:opacity-90 transition font-semibold flex items-center">
+                                <i class="fas fa-plus mr-2"></i> Nuevo Producto
+                            </button>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+                            <div class="p-4 bg-blue-50 border-b">
+                                <div class="flex items-center text-blue-700">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    <span class="text-sm">Haz clic en un producto para editarlo</span>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-4 text-left font-semibold">Producto</th>
+                                            <th class="px-6 py-4 text-left font-semibold">Categoría</th>
+                                            <th class="px-6 py-4 text-left font-semibold">Precio</th>
+                                            <th class="px6 py-4 text-left font-semibold">Stock</th>
+                                            <th class="px-6 py-4 text-left font-semibold">Estado</th>
+                                            <th class="px-6 py-4 text-right font-semibold">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y">
+                                        ${this.products.map(product => `
+                                            <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="app.editProduct(${product.id})">
+                                                <td class="px-6 py-4">
+                                                    <div class="flex items-center space-x-4">
+                                                        <img src="${product.image}" alt="${product.name}" class="w-16 h-16 object-cover rounded">
+                                                        <div>
+                                                            <div class="font-semibold">${product.name}</div>
+                                                            <div class="text-sm text-gray-600">ID: ${product.id}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <span class="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm">
+                                                        ${product.category}
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <div class="font-semibold">$${product.price.toFixed(2)}</div>
+                                                    ${product.discount > 0 ? `
+                                                        <div class="text-xs text-red-600 flex items-center">
+                                                            <i class="fas fa-tag mr-1"></i> -${product.discount}%
+                                                        </div>
+                                                    ` : ''}
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <div class="flex items-center">
+                                                        <span class="font-semibold ${product.stock < 10 ? 'text-red-600' : 'text-green-600'}">
+                                                            ${product.stock}
+                                                        </span>
+                                                        ${product.stock < 5 ? `
+                                                            <i class="fas fa-exclamation-triangle text-yellow-500 ml-2"></i>
+                                                        ` : ''}
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    ${product.stock > 0 ? 
+                                                        '<span class="px-3 py-1 bg-green-100 text-green-600 rounded-full text-sm font-semibold flex items-center w-fit">' +
+                                                        '<i class="fas fa-check-circle mr-1"></i> Disponible</span>' :
+                                                        '<span class="px-3 py-1 bg-red-100 text-red-600 rounded-full text-sm font-semibold flex items-center w-fit">' +
+                                                        '<i class="fas fa-times-circle mr-1"></i> Agotado</span>'
+                                                    }
+                                                    ${product.featured ? `
+                                                        <span class="mt-1 block px-2 py-1 bg-yellow-100 text-yellow-600 rounded text-xs w-fit">
+                                                            <i class="fas fa-star mr-1"></i> Destacado
+                                                        </span>
+                                                    ` : ''}
+                                                </td>
+                                                <td class="px-6 py-4 text-right" onclick="event.stopPropagation()">
+                                                    <button onclick="app.editProduct(${product.id})" 
+                                                        class="text-blue-600 hover:text-blue-700 mr-3 p-2 rounded hover:bg-blue-50">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button onclick="app.showDeleteConfirmation(${product.id}, '${product.name}')" 
+                                                        class="text-red-600 hover:text-red-700 p-2 rounded hover:bg-red-50">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <h3 class="font-bold text-lg mb-4">📊 Estadísticas Rápidas</h3>
+                            <div class="grid md:grid-cols-4 gap-4">
+                                <div class="bg-white p-4 rounded-lg shadow text-center">
+                                    <div class="text-2xl font-bold text-blue-600">${this.products.length}</div>
+                                    <div class="text-sm text-gray-600">Productos Totales</div>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg shadow text-center">
+                                    <div class="text-2xl font-bold text-green-600">${this.products.filter(p => p.stock > 0).length}</div>
+                                    <div class="text-sm text-gray-600">Disponibles</div>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg shadow text-center">
+                                    <div class="text-2xl font-bold text-red-600">${this.products.filter(p => p.stock === 0).length}</div>
+                                    <div class="text-sm text-gray-600">Agotados</div>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg shadow text-center">
+                                    <div class="text-2xl font-bold text-yellow-600">${this.products.filter(p => p.featured).length}</div>
+                                    <div class="text-sm text-gray-600">Destacados</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderAdminOrders() {
+                if (!this.currentUser || this.currentUser.role !== 'admin') {
+                    this.showNotification('Acceso denegado', 'error');
+                    this.showSection('home');
+                    return '';
+                }
+
+                return `
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <h1 class="text-4xl font-bold mb-8">Gestión de Pedidos</h1>
+
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-4 text-left font-semibold">ID</th>
+                                        <th class="px-6 py-4 text-left font-semibold">Cliente</th>
+                                        <th class="px-6 py-4 text-left font-semibold">Fecha</th>
+                                        <th class="px-6 py-4 text-left font-semibold">Total</th>
+                                        <th class="px-6 py-4 text-left font-semibold">Estado</th>
+                                        <th class="px-6 py-4 text-right font-semibold">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${this.orders.map(order => {
+                                        const user = this.users.find(u => u.id === order.userId);
+                                        return `
+                                            <tr class="hover:bg-gray-50 transition">
+                                                <td class="px-6 py-4 font-semibold">#${order.id}</td>
+                                                <td class="px-6 py-4">
+                                                    <div class="font-semibold">${user?.name || 'Cliente'}</div>
+                                                    <div class="text-sm text-gray-600">${user?.email || ''}</div>
+                                                </td>
+                                                <td class="px-6 py-4">${new Date(order.date).toLocaleDateString()}</td>
+                                                <td class="px-6 py-4 font-bold text-blue-600">$${order.total.toFixed(2)}</td>
+                                                <td class="px-6 py-4">
+                                                    <select onchange="app.updateOrderStatus(${order.id}, this.value)" 
+                                                        class="px-3 py-1 rounded-full text-sm font-semibold ${
+                                                            order.status === 'entregado' ? 'bg-green-100 text-green-600' :
+                                                            order.status === 'enviado' ? 'bg-blue-100 text-blue-600' :
+                                                            order.status === 'procesando' ? 'bg-yellow-100 text-yellow-600' :
+                                                            order.status === 'cancelado' ? 'bg-red-100 text-red-600' :
+                                                            'bg-gray-100 text-gray-600'
+                                                        }">
+                                                        <option value="pendiente" ${order.status === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                                                        <option value="procesando" ${order.status === 'procesando' ? 'selected' : ''}>Procesando</option>
+                                                        <option value="enviado" ${order.status === 'enviado' ? 'selected' : ''}>Enviado</option>
+                                                        <option value="entregado" ${order.status === 'entregado' ? 'selected' : ''}>Entregado</option>
+                                                        <option value="cancelado" ${order.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+                                                    </select>
+                                                </td>
+                                                <td class="px-6 py-4 text-right">
+                                                    <button onclick="app.viewOrderDetails(${order.id})" 
+                                                        class="text-blue-600 hover:text-blue-700">
+                                                        <i class="fas fa-eye"></i> Ver
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderAdminUsers() {
+                if (!this.currentUser || this.currentUser.role !== 'admin') {
+                    this.showNotification('Acceso denegado', 'error');
+                    this.showSection('home');
+                    return '';
+                }
+
+                return `
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <h1 class="text-4xl font-bold mb-8">Gestión de Usuarios</h1>
+
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-4 text-left font-semibold">Usuario</th>
+                                        <th class="px-6 py-4 text-left font-semibold">Email</th>
+                                        <th class="px-6 py-4 text-left font-semibold">Rol</th>
+                                        <th class="px-6 py-4 text-left font-semibold">Pedidos</th>
+                                        <th class="px-6 py-4 text-left font-semibold">Total Gastado</th>
+                                        <th class="px-6 py-4 text-right font-semibold">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${this.users.map(user => {
+                                        const userOrders = this.orders.filter(o => o.userId === user.id);
+                                        const totalSpent = userOrders.reduce((sum, o) => sum + o.total, 0);
+                                        return `
+                                            <tr class="hover:bg-gray-50 transition">
+                                                <td class="px-6 py-4">
+                                                    <div class="flex items-center space-x-3">
+                                                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                                            <i class="fas fa-user text-blue-600"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div class="font-semibold">${user.name}</div>
+                                                            <div class="text-sm text-gray-600">ID: ${user.id}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4">${user.email}</td>
+                                                <td class="px-6 py-4">
+                                                    <span class="px-3 py-1 rounded-full text-sm font-semibold ${
+                                                        user.role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                                                    }">
+                                                        ${user.role === 'admin' ? 'Administrador' : 'Cliente'}
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 font-semibold">${userOrders.length}</td>
+                                                <td class="px-6 py-4 font-bold text-blue-600">$${totalSpent.toFixed(2)}</td>
+                                                <td class="px-6 py-4 text-right">
+                                                    <button onclick="app.viewUserDetails(${user.id})" 
+                                                        class="text-blue-600 hover:text-blue-700">
+                                                        <i class="fas fa-eye"></i> Ver
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderAbout() {
+                return `
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <h1 class="text-4xl font-bold text-center mb-12">Sobre Nosotros</h1>
+
+                        <div class="grid md:grid-cols-2 gap-12 items-center mb-16">
+                            <div>
+                                <h2 class="text-3xl font-bold mb-6">Nuestra Historia</h2>
+                                <p class="text-gray-700 mb-4">
+                                    Desde 1995, ElectroHogar ha sido líder en la venta de electrodomésticos en Colombia. 
+                                    Comenzamos como una pequeña tienda familiar y hemos crecido hasta convertirnos en 
+                                    uno de los distribuidores más confiables del país.
+                                </p>
+                                <p class="text-gray-700 mb-4">
+                                    Nuestra misión es ofrecer productos de la más alta calidad a precios competitivos, 
+                                    siempre con un servicio al cliente excepcional que nos distingue.
+                                </p>
+                                <p class="text-gray-700">
+                                    Trabajamos con las mejores marcas internacionales y garantizamos la satisfacción 
+                                    total de nuestros clientes en cada compra.
+                                </p>
+                            </div>
+                            <div>
+                                <img src="https://images.unsplash.com/photo-1556911220-bff31c812dba?w=600" 
+                                    alt="Tienda" class="rounded-lg shadow-xl">
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-3 gap-8 mb-16">
+                            <div class="text-center">
+                                <div class="text-5xl font-bold text-blue-600 mb-2">29+</div>
+                                <div class="text-gray-600 font-semibold">Años de Experiencia</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-5xl font-bold text-blue-600 mb-2">50K+</div>
+                                <div class="text-gray-600 font-semibold">Clientes Satisfechos</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-5xl font-bold text-blue-600 mb-2">500+</div>
+                                <div class="text-gray-600 font-semibold">Productos Disponibles</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-12 text-center">
+                            <h2 class="text-3xl font-bold mb-4">¿Por qué elegir ElectroHogar?</h2>
+                            <p class="text-xl mb-8 max-w-3xl mx-auto">
+                                Ofrecemos la mejor selección de electrodomésticos con garantía de calidad, 
+                                precios competitivos y un servicio al cliente incomparable.
+                            </p>
+                            <button onclick="app.showSection('products')" 
+                                class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                                Explorar Productos
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderContact() {
+                return `
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <h1 class="text-4xl font-bold text-center mb-12">Contáctanos</h1>
+
+                        <div class="grid md:grid-cols-2 gap-12">
+                            <div>
+                                <h2 class="text-2xl font-bold mb-6">Envíanos un Mensaje</h2>
+                                <form class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Nombre *</label>
+                                        <input type="text" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Email *</label>
+                                        <input type="email" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Teléfono</label>
+                                        <input type="tel" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Mensaje *</label>
+                                        <textarea rows="5" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                                    </div>
+                                    <button type="submit" 
+                                        class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
+                                        Enviar Mensaje
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div>
+                                <h2 class="text-2xl font-bold mb-6">Información de Contacto</h2>
+                                <div class="space-y-6">
+                                    <div class="flex items-start space-x-4">
+                                        <div class="bg-blue-100 p-3 rounded-lg">
+                                            <i class="fas fa-map-marker-alt text-2xl text-blue-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold mb-1">Dirección</h3>
+                                            <p class="text-gray-600">Calle Principal 123<br>28001 Cordoba, Colombia</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start space-x-4">
+                                        <div class="bg-green-100 p-3 rounded-lg">
+                                            <i class="fas fa-phone text-2xl text-green-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold mb-1">Teléfono</h3>
+                                            <p class="text-gray-600">305 434 3233<br>Lun - Vie: 9:00 - 18:00</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start space-x-4">
+                                        <div class="bg-purple-100 p-3 rounded-lg">
+                                            <i class="fas fa-envelope text-2xl text-purple-600"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold mb-1">Email</h3>
+                                            <p class="text-gray-600">info@electrohogar.com<br>soporte@electrohogar.com</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-8">
+                                    <h3 class="font-semibold mb-4">Horario de Atención</h3>
+                                    <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+                                        <div class="flex justify-between">
+                                            <span>Lunes - Viernes</span>
+                                            <span class="font-semibold">9:00 - 18:00</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span>Sábados</span>
+                                            <span class="font-semibold">10:00 - 14:00</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span>Domingos</span>
+                                            <span class="font-semibold text-red-600">Cerrado</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            // Helper Functions
+            renderProductCard(product) {
+    const finalPrice = product.discount ? 
+        product.price * (1 - product.discount / 100) : 
+        product.price;
+    
+    const isInWishlist = this.wishlist.includes(product.id);
+    const rating = this.getProductRating(product.id);
+    const reviewCount = this.reviews.filter(r => r.productId === product.id).length;
+    
+    return `
+        <div class="bg-white rounded-lg shadow-md product-card overflow-hidden">
+            ${product.discount > 0 ? `
+                <div class="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold badge z-10">
+                    -${product.discount}%
+                </div>
+            ` : ''}
+            ${product.stock === 0 ? `
+                <div class="absolute top-2 left-2 bg-gray-800 text-white px-3 py-1 rounded-full text-sm font-bold z-10">
+                    Agotado
+                </div>
+            ` : ''}
+            
+            <div class="relative overflow-hidden h-64">
+                <img src="${product.image}" alt="${product.name}" 
+                    class="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform duration-300"
+                    onclick="app.showProductDetail(${product.id})">
+                <button onclick="app.toggleWishlist(${product.id}); event.stopPropagation();" 
+                    class="absolute top-2 left-2 bg-white p-2 rounded-full shadow-lg hover:scale-110 transition z-10">
+                    <i class="fas fa-heart ${isInWishlist ? 'text-red-500' : 'text-gray-300'}"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div class="text-sm text-gray-500 mb-2">${product.category}</div>
+                <h3 class="font-semibold text-lg mb-2 hover:text-blue-600 cursor-pointer" 
+                    onclick="app.showProductDetail(${product.id})">
+                    ${product.name}
+                </h3>
+                
+                <div class="flex items-center mb-3">
+                    <div class="star-rating text-sm mr-2">
+                        ${this.renderStars(rating)}
+                    </div>
+                    <span class="text-sm text-gray-600">(${reviewCount})</span>
+                </div>
+                
+                <p class="text-gray-600 text-sm mb-4 line-clamp-2">${product.description}</p>
+                
+                <div class="flex items-center justify-between mb-4">
+                    ${product.discount > 0 ? `
+                        <div>
+                            <div class="text-2xl font-bold text-blue-600">$${finalPrice.toFixed(2)}</div>
+                            <div class="text-sm text-gray-400 line-through">$${product.price.toFixed(2)}</div>
+                        </div>
+                    ` : `
+                        <div class="text-2xl font-bold text-blue-600">$${product.price.toFixed(2)}</div>
+                    `}
+                </div>
+                
+                <button onclick="app.addToCart(${product.id})" 
+                    ${product.stock === 0 ? 'disabled' : ''}
+                    class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center ${product.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''}">
+                    <i class="fas fa-shopping-cart mr-2"></i>
+                    ${product.stock === 0 ? 'Agotado' : 'Agregar al Carrito'}
+                </button>
+            </div>
+        </div>
+    `;
+},
+            renderStars(rating) {
+                let stars = '';
+                for (let i = 1; i <= 5; i++) {
+                    if (i <= rating) {
+                        stars += '<i class="fas fa-star"></i>';
+                    } else if (i - 0.5 <= rating) {
+                        stars += '<i class="fas fa-star-half-alt"></i>';
+                    } else {
+                        stars += '<i class="far fa-star"></i>';
+                    }
+                }
+                return stars;
+            },
+
+            getProductRating(productId) {
+                const productReviews = this.reviews.filter(r => r.productId === productId);
+                if (productReviews.length === 0) return 0;
+                const sum = productReviews.reduce((acc, r) => acc + r.rating, 0);
+                return sum / productReviews.length;
+            },
+
+            getFilteredProducts() {
+                return this.products.filter(product => {
+                    const matchesCategory = this.filters.category === 'all' || product.category === this.filters.category;
+                    const matchesSearch = product.name.toLowerCase().includes(this.filters.search.toLowerCase()) ||
+                                        product.description.toLowerCase().includes(this.filters.search.toLowerCase());
+                    const finalPrice = product.discount ? product.price * (1 - product.discount / 100) : product.price;
+                    const matchesPrice = finalPrice <= this.filters.maxPrice;
+                    const matchesAvailability = this.filters.availability === 'all' || 
+                                              (this.filters.availability === 'available' && product.stock > 0) ||
+                                              (this.filters.availability === 'out' && product.stock === 0);
+                    
+                    return matchesCategory && matchesSearch && matchesPrice && matchesAvailability;
+                });
+            },
+
+            updateFilters() {
+                this.filters.search = document.getElementById('search-input')?.value || '';
+                this.filters.category = document.getElementById('category-filter')?.value || 'all';
+                this.filters.maxPrice = parseInt(document.getElementById('price-filter')?.value || 10000);
+                this.filters.availability = document.getElementById('availability-filter')?.value || 'all';
+                
+                const grid = document.getElementById('products-grid');
+                if (grid) {
+                    const filteredProducts = this.getFilteredProducts();
+                    grid.innerHTML = filteredProducts.map(product => this.renderProductCard(product)).join('');
+                    
+                    if (filteredProducts.length === 0) {
+                        grid.innerHTML = `
+                            <div class="col-span-full text-center py-16">
+                                <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
+                                <h3 class="text-2xl font-semibold text-gray-600">No se encontraron productos</h3>
+                                <p class="text-gray-500 mt-2">Intenta ajustar los filtros de búsqueda</p>
+                            </div>
+                        `;
+                    }
+                }
+            },
+
+            filterByCategory(category) {
+                this.filters.category = category;
+                this.showSection('products');
+                setTimeout(() => {
+                    const categoryFilter = document.getElementById('category-filter');
+                    if (categoryFilter) {
+                        categoryFilter.value = category;
+                        this.updateFilters();
+                    }
+                }, 100);
+            },
+
+            // Cart Functions
+            addToCart(productId) {
+                const product = this.products.find(p => p.id === productId);
+                if (!product || product.stock === 0) {
+                    this.showNotification('Producto no disponible', 'error');
+                    return;
+                }
+
+                const existingItem = this.cart.find(item => item.productId === productId);
+                if (existingItem) {
+                    if (existingItem.quantity < product.stock) {
+                        existingItem.quantity++;
+                        this.showNotification('Cantidad actualizada en el carrito', 'success');
+                    } else {
+                        this.showNotification('No hay más stock disponible', 'warning');
+                        return;
+                    }
+                } else {
+                    this.cart.push({ productId, quantity: 1 });
+                    this.showNotification('Producto agregado al carrito', 'success');
+                }
+
+                this.updateCartCount();
+                this.saveData();
+            },
+
+            removeFromCart(productId) {
+                this.cart = this.cart.filter(item => item.productId !== productId);
+                this.updateCartCount();
+                this.saveData();
+                this.showSection('cart');
+                this.showNotification('Producto eliminado del carrito', 'info');
+            },
+
+            updateCartQuantity(productId, newQuantity) {
+                const product = this.products.find(p => p.id === productId);
+                if (newQuantity <= 0) {
+                    this.removeFromCart(productId);
+                    return;
+                }
+                
+                if (newQuantity > product.stock) {
+                    this.showNotification('No hay suficiente stock', 'warning');
+                    return;
+                }
+
+                const item = this.cart.find(i => i.productId === productId);
+                if (item) {
+                    item.quantity = newQuantity;
+                    this.updateCartCount();
+                    this.saveData();
+                    this.showSection('cart');
+                }
+            },
+
+            saveData() {
+    localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+    localStorage.setItem('cart', JSON.stringify(this.cart));
+    localStorage.setItem('wishlist', JSON.stringify(this.wishlist));
+},
+
+renderProducts() {
+    return `
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <h1 class="text-4xl font-bold mb-8">Nuestros Productos</h1>
+            
+            <!-- Filtros -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="grid md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Buscar</label>
+                        <input type="text" id="search-input" 
+                            onkeyup="app.updateFilters()"
+                            placeholder="Buscar productos..." 
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Categoría</label>
+                        <select id="category-filter" onchange="app.updateFilters()" 
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="all">Todas</option>
+                            ${this.categories.map(cat => `
+                                <option value="${cat.name}" ${this.filters.category === cat.name ? 'selected' : ''}>
+                                    ${cat.name}
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Precio máximo</label>
+                        <input type="range" id="price-filter" min="0" max="10000" value="${this.filters.maxPrice}" 
+                            oninput="document.getElementById('price-value').textContent = '$' + this.value; app.updateFilters()" 
+                            class="w-full">
+                        <div class="text-center text-sm text-gray-600">
+                            <span id="price-value">$${this.filters.maxPrice}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Disponibilidad</label>
+                        <select id="availability-filter" onchange="app.updateFilters()" 
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="all">Todos</option>
+                            <option value="available">Disponibles</option>
+                            <option value="out">Agotados</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid de productos -->
+            <div id="products-grid" class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                ${this.getFilteredProducts().map(product => this.renderProductCard(product)).join('')}
+            </div>
+
+            ${this.getFilteredProducts().length === 0 ? `
+                <div class="text-center py-16">
+                    <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
+                    <h3 class="text-2xl font-semibold text-gray-600">No se encontraron productos</h3>
+                    <p class="text-gray-500 mt-2">Intenta ajustar los filtros de búsqueda</p>
+                </div>
+            ` : ''}
+        </div>
+    `;
+},
+
+renderCart() {
+    if (this.cart.length === 0) {
+        return `
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <h1 class="text-4xl font-bold mb-8">Carrito de Compras</h1>
+                <div class="text-center py-16">
+                    <i class="fas fa-shopping-cart text-6xl text-gray-300 mb-4"></i>
+                    <h3 class="text-2xl font-semibold text-gray-600 mb-4">Tu carrito está vacío</h3>
+                    <button onclick="app.showSection('products')" 
+                        class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
+                        <i class="fas fa-shopping-bag mr-2"></i> Ir a comprar
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    let subtotal = 0;
+    const cartItems = this.cart.map(item => {
+        const product = this.products.find(p => p.id === item.productId);
+        if (!product) return '';
+        
+        const finalPrice = product.discount ? 
+            product.price * (1 - product.discount / 100) : 
+            product.price;
+        const itemTotal = finalPrice * item.quantity;
+        subtotal += itemTotal;
+
+        return `
+            <div class="flex items-center space-x-4 p-4 bg-white rounded-lg shadow mb-4">
+                <img src="${product.image}" alt="${product.name}" class="w-24 h-24 object-cover rounded">
+                <div class="flex-1">
+                    <h3 class="font-semibold text-lg">${product.name}</h3>
+                    <p class="text-gray-600 text-sm">${product.category}</p>
+                    <p class="text-blue-600 font-bold mt-2">$${finalPrice.toFixed(2)} c/u</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="app.updateCartQuantity(${product.id}, ${item.quantity - 1})" 
+                        class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="font-semibold px-4">${item.quantity}</span>
+                    <button onclick="app.updateCartQuantity(${product.id}, ${item.quantity + 1})" 
+                        class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold text-lg">$${itemTotal.toFixed(2)}</p>
+                    <button onclick="app.removeFromCart(${product.id})" 
+                        class="text-red-600 hover:text-red-700 text-sm mt-2">
+                        <i class="fas fa-trash mr-1"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const shipping = subtotal > 300 ? 0 : 15;
+    const tax = subtotal * 0.21;
+    const total = subtotal + shipping + tax;
+
+    return `
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <h1 class="text-4xl font-bold mb-8">Carrito de Compras</h1>
+            
+            <div class="grid lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2">
+                    ${cartItems}
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-6 h-fit">
+                    <h2 class="text-2xl font-bold mb-6">Resumen del Pedido</h2>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex justify-between">
+                            <span>Subtotal:</span>
+                            <span class="font-semibold">$${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Envío:</span>
+                            <span class="font-semibold">${shipping === 0 ? 'GRATIS' : '$' + shipping.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>IVA (21%):</span>
+                            <span class="font-semibold">$${tax.toFixed(2)}</span>
+                        </div>
+                        <div class="border-t pt-3 flex justify-between text-xl font-bold">
+                            <span>Total:</span>
+                            <span class="text-blue-600">$${total.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    ${shipping === 0 ? '' : `
+                        <div class="bg-blue-50 p-3 rounded text-sm text-blue-700 mb-4">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Añade $${(300 - subtotal).toFixed(2)} más para envío gratis
+                        </div>
+                    `}
+
+                    <button onclick="app.proceedToCheckout()" 
+                        class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
+                        <i class="fas fa-credit-card mr-2"></i> Proceder al Pago
+                    </button>
+                    
+                    <button onclick="app.showSection('products')" 
+                        class="w-full mt-3 border-2 border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50 transition font-semibold">
+                        <i class="fas fa-arrow-left mr-2"></i> Seguir Comprando
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+},
+
+            updateCartCount() {
+                const count = this.cart.reduce((sum, item) => sum + item.quantity, 0);
+                const badge = document.getElementById('cart-count');
+                if (badge) badge.textContent = count;
+            },
+
+            // Wishlist Functions
+            toggleWishlist(productId) {
+                const index = this.wishlist.indexOf(productId);
+                if (index > -1) {
+                    this.wishlist.splice(index, 1);
+                    this.showNotification('Eliminado de favoritos', 'info');
+                } else {
+                    this.wishlist.push(productId);
+                    this.showNotification('Agregado a favoritos', 'success');
+                }
+                this.updateWishlistCount();
+                this.saveData();
+                
+                // Refresh current section if viewing products or wishlist
+                if (this.currentSection === 'products' || this.currentSection === 'wishlist' || this.currentSection === 'product-detail') {
+                    this.showSection(this.currentSection);
+                }
+            },
+
+            updateWishlistCount() {
+                const badge = document.getElementById('wishlist-count');
+                if (badge) badge.textContent = this.wishlist.length;
+            },
+
+            // Product Detail
+            showProductDetail(productId) {
+                this.selectedProductId = productId;
+                this.showSection('product-detail');
+            },
+
+            setReviewRating(rating) {
+                this.tempReviewRating = rating;
+                document.querySelectorAll('.review-star').forEach((star, index) => {
+                    if (index < rating) {
+                        star.classList.remove('text-gray-300');
+                        star.classList.add('text-yellow-400');
+                    } else {
+                        star.classList.add('text-gray-300');
+                        star.classList.remove('text-yellow-400');
+                    }
+                });
+            },
+
+            submitReview(productId) {
+                if (!this.currentUser) {
+                    this.showNotification('Debes iniciar sesión', 'warning');
+                    return;
+                }
+
+                const rating = this.tempReviewRating || 0;
+                const comment = document.getElementById('review-comment')?.value;
+
+                if (rating === 0) {
+                    this.showNotification('Por favor selecciona una calificación', 'warning');
+                    return;
+                }
+
+                if (!comment || comment.trim() === '') {
+                    this.showNotification('Por favor escribe un comentario', 'warning');
+                    return;
+                }
+
+                const review = {
+                    id: this.reviews.length + 1,
+                    productId,
+                    userId: this.currentUser.id,
+                    userName: this.currentUser.name,
+                    rating,
+                    comment: comment.trim(),
+                    date: new Date().toISOString()
+                };
+
+                this.reviews.push(review);
+                this.saveData();
+                this.showNotification('Reseña publicada exitosamente', 'success');
+                this.showProductDetail(productId);
+            },
+
+            // Checkout
+            proceedToCheckout() {
+                if (!this.currentUser) {
+                    this.showNotification('Debes iniciar sesión para continuar', 'warning');
+                    this.showLoginModal();
+                    return;
+                }
+                this.showSection('checkout');
+            },
+
+            placeOrder() {
+                if (!this.currentUser) return;
+
+                const cartItems = this.cart.map(item => {
+                    const product = this.products.find(p => p.id === item.productId);
+                    const finalPrice = product.discount 
+                        ? product.price * (1 - product.discount / 100)
+                        : product.price;
+                    
+                    return {
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        price: finalPrice
+                    };
+                });
+
+                const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                const shipping = subtotal > 300 ? 0 : 15;
+                const tax = subtotal * 0.21;
+                const total = subtotal + shipping + tax;
+
+                const order = {
+                    id: this.orders.length + 1,
+                    userId: this.currentUser.id,
+                    items: cartItems,
+                    subtotal,
+                    shipping,
+                    tax,
+                    total,
+                    status: 'pendiente',
+                    date: new Date().toISOString(),
+                    shippingAddress: {
+                        name: document.getElementById('checkout-name')?.value,
+                        email: document.getElementById('checkout-email')?.value,
+                        phone: document.getElementById('checkout-phone')?.value,
+                        street: document.getElementById('checkout-street')?.value,
+                        city: document.getElementById('checkout-city')?.value,
+                        postalCode: document.getElementById('checkout-postal')?.value,
+                        country: document.getElementById('checkout-country')?.value
+                    }
+                };
+
+                // Update product stock
+                this.cart.forEach(item => {
+                    const product = this.products.find(p => p.id === item.productId);
+                    if (product) {
+                        product.stock -= item.quantity;
+                    }
+                });
+
+                this.orders.push(order);
+                this.cart = [];
+                this.updateCartCount();
+                this.saveData();
+
+                this.showNotification('¡Pedido realizado con éxito!', 'success');
+                this.showSection('orders');
+            },
+
+            trackOrder(orderId) {
+                const order = this.orders.find(o => o.id === orderId);
+                if (!order) return;
+
+                const statusSteps = ['pendiente', 'procesando', 'enviado', 'entregado'];
+                const currentIndex = statusSteps.indexOf(order.status);
+
+                const modalContent = `
+                    <div class="bg-white rounded-lg p-8 max-w-2xl w-full">
+                        <h2 class="text-3xl font-bold mb-6">Rastreo de Pedido #${order.id}</h2>
+                        
+                        <div class="mb-8">
+                            <div class="flex justify-between mb-2">
+                                ${statusSteps.map((status, index) => `
+                                    <div class="flex-1 ${index < statusSteps.length - 1 ? 'mr-2' : ''}">
+                                        <div class="h-2 rounded ${index <= currentIndex ? 'bg-blue-600' : 'bg-gray-200'}"></div>
+                                        <div class="text-center mt-2 text-sm ${index <= currentIndex ? 'text-blue-600 font-semibold' : 'text-gray-400'}">
+                                            ${status.charAt(0).toUpperCase() + status.slice(1)}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 mb-6">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Fecha del pedido:</span>
+                                <span class="font-semibold">${new Date(order.date).toLocaleDateString()}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Total:</span>
+                                <span class="font-semibold text-blue-600">$${order.total.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Estado actual:</span>
+                                <span class="font-semibold">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
+                            </div>
+                        </div>
+
+                        <button onclick="app.closeModal()" 
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
+                            Cerrar
+                        </button>
+                    </div>
+                `;
+
+                this.showModal(modalContent);
+            },
+
+            // Admin Functions
+            updateOrderStatus(orderId, newStatus) {
+                const order = this.orders.find(o => o.id === orderId);
+                if (order) {
+                    order.status = newStatus;
+                    this.saveData();
+                    this.showNotification('Estado actualizado', 'success');
+                }
+            },
+
+            viewOrderDetails(orderId) {
+                const order = this.orders.find(o => o.id === orderId);
+                if (!order) return;
+
+                const user = this.users.find(u => u.id === order.userId);
+                
+                const modalContent = `
+                    <div class="bg-white rounded-lg p-8 max-w-4xl w-full max-h-screen overflow-y-auto">
+                        <h2 class="text-3xl font-bold mb-6">Detalles del Pedido #${order.id}</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <h3 class="font-semibold mb-3">Información del Cliente</h3>
+                                <div class="space-y-2 text-sm">
+                                    <p><span class="text-gray-600">Nombre:</span> ${user?.name}</p>
+                                    <p><span class="text-gray-600">Email:</span> ${user?.email}</p>
+                                    <p><span class="text-gray-600">Teléfono:</span> ${user?.phone || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-3">Dirección de Envío</h3>
+                                <div class="space-y-2 text-sm">
+                                    <p>${order.shippingAddress?.street || 'N/A'}</p>
+                                    <p>${order.shippingAddress?.city || 'N/A'}, ${order.shippingAddress?.postalCode || 'N/A'}</p>
+                                    <p>${order.shippingAddress?.country || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <h3 class="font-semibold mb-3">Productos</h3>
+                            <div class="space-y-3">
+                                ${order.items.map(item => {
+                                    const product = this.products.find(p => p.id === item.productId);
+                                    return product ? `
+                                        <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded">
+                                            <img src="${product.image}" alt="${product.name}" class="w-16 h-16 object-cover rounded">
+                                            <div class="flex-1">
+                                                <div class="font-semibold">${product.name}</div>
+                                                <div class="text-sm text-gray-600">Cantidad: ${item.quantity}</div>
+                                            </div>
+                                            <div class="font-bold">$${item.price.toFixed(2)}</div>
+                                        </div>
+                                    ` : '';
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <div class="border-t pt-4 space-y-2 mb-6">
+                            <div class="flex justify-between">
+                                <span>Subtotal:</span>
+                                <span class="font-semibold">$${order.subtotal.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Envío:</span>
+                                <span class="font-semibold">$${order.shipping.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>IVA:</span>
+                                <span class="font-semibold">$${order.tax.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between text-xl font-bold border-t pt-2">
+                                <span>Total:</span>
+                                <span class="text-blue-600">$${order.total.toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        <button onclick="app.closeModal()" 
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
+                            Cerrar
+                        </button>
+                    </div>
+                `;
+
+                this.showModal(modalContent);
+            },
+
+            viewUserDetails(userId) {
+                const user = this.users.find(u => u.id === userId);
+                if (!user) return;
+
+                const userOrders = this.orders.filter(o => o.userId === userId);
+                const totalSpent = userOrders.reduce((sum, o) => sum + o.total, 0);
+
+                const modalContent = `
+                    <div class="bg-white rounded-lg p-8 max-w-2xl w-full">
+                        <h2 class="text-3xl font-bold mb-6">Detalles del Usuario</h2>
+                        
+                        <div class="mb-6">
+                            <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-user text-4xl text-blue-600"></i>
+                            </div>
+                            <h3 class="text-2xl font-semibold text-center">${user.name}</h3>
+                            <p class="text-center text-gray-600">${user.email}</p>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                                <div class="text-3xl font-bold text-blue-600">${userOrders.length}</div>
+                                <div class="text-sm text-gray-600">Pedidos</div>
+                            </div>
+                            <div class="text-center p-4 bg-green-50 rounded-lg">
+                                <div class="text-3xl font-bold text-green-600">$${totalSpent.toFixed(0)}</div>
+                                <div class="text-sm text-gray-600">Total Gastado</div>
+                            </div>
+                            <div class="text-center p-4 bg-purple-50 rounded-lg">
+                                <div class="text-3xl font-bold text-purple-600">${user.role === 'admin' ? 'Admin' : 'Cliente'}</div>
+                                <div class="text-sm text-gray-600">Rol</div>
+                            </div>
+                        </div>
+
+                        <button onclick="app.closeModal()" 
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
+                            Cerrar
+                        </button>
+                    </div>
+                `;
+
+                this.showModal(modalContent);
+            },
+
+            showAddProductModal() {
+                const modalContent = `
+                    <div class="bg-white rounded-lg p-8 max-w-2xl w-full max-h-screen overflow-y-auto">
+                        <h2 class="text-3xl font-bold mb-6">Nuevo Producto</h2>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Nombre *</label>
+                                <input type="text" id="new-product-name" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Categoría *</label>
+                                <select id="new-product-category" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    ${this.categories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Precio ($) *</label>
+                                <input type="number" id="new-product-price" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Stock *</label>
+                                <input type="number" id="new-product-stock" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Descuento (%)</label>
+                                <input type="number" id="new-product-discount" min="0" max="100" value="0" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">URL de Imagen *</label>
+                                <input type="text" id="new-product-image" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Descripción *</label>
+                                <textarea id="new-product-description" rows="3" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-4 mt-6">
+                            <button onclick="app.saveNewProduct()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
+                                Guardar
+                            </button>
+                            <button onclick="app.closeModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition font-semibold">
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                this.showModal(modalContent);
+            },
+
+            saveNewProduct() {
+                const name = document.getElementById('new-product-name')?.value;
+                const category = document.getElementById('new-product-category')?.value;
+                const price = parseFloat(document.getElementById('new-product-price')?.value);
+                const stock = parseInt(document.getElementById('new-product-stock')?.value);
+                const discount = parseInt(document.getElementById('new-product-discount')?.value || 0);
+                const image = document.getElementById('new-product-image')?.value;
+                const description = document.getElementById('new-product-description')?.value;
+
+                if (!name || !price || !stock || !image || !description) {
+                    this.showNotification('Por favor completa todos los campos requeridos', 'warning');
+                    return;
+                }
+
+                const newProduct = {
+                    id: this.products.length + 1,
+                    name,
+                    category,
+                    price,
+                    stock,
+                    discount,
+                    image,
+                    description,
+                    specs: {},
+                    featured: false
+                };
+
+                this.products.push(newProduct);
+                this.saveData();
+                this.closeModal();
+                this.showNotification('Producto creado exitosamente', 'success');
+                this.showSection('admin-products');
+            },
+
+            deleteProduct(productId) {
+                if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+                    this.products = this.products.filter(p => p.id !== productId);
+                    this.saveData();
+                    this.showNotification('Producto eliminado', 'success');
+                    this.showSection('admin-products');
+                }
+            },
+
+            updateProfile() {
+                const name = document.getElementById('profile-name')?.value;
+                const email = document.getElementById('profile-email')?.value;
+                const phone = document.getElementById('profile-phone')?.value;
+
+                if (this.currentUser) {
+                    this.currentUser.name = name;
+                    this.currentUser.email = email;
+                    this.currentUser.phone = phone;
+
+                    // Update in users array
+                    const userIndex = this.users.findIndex(u => u.id === this.currentUser.id);
+                    if (userIndex > -1) {
+                        this.users[userIndex] = this.currentUser;
+                    }
+
+                    this.saveData();
+                    this.renderUserMenu();
+                    this.showNotification('Perfil actualizado exitosamente', 'success');
+                }
+            },
+
+            // Auth Functions
+            showLoginModal() {
+                const modalContent = `
+                    <div class="bg-white rounded-lg p-8 max-w-md w-full">
+                        <h2 class="text-3xl font-bold mb-6 text-center">Iniciar Sesión</h2>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium mb-2">Email</label>
+                            <input type="email" id="login-email" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium mb-2">Contraseña</label>
+                            <input type="password" id="login-password" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <button onclick="app.login()" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold mb-4">
+                            Iniciar Sesión
+                        </button>
+
+                        <div class="text-center text-sm text-gray-600 mb-4">
+                            ¿No tienes cuenta? <a onclick="app.showRegisterModal()" class="text-blue-600 cursor-pointer hover:underline">Regístrate aquí</a>
+                        </div>
+
+                        <div class="border-t pt-4">
+                            <div class="text-xs text-gray-600 text-center mb-2">Usuarios de prueba:</div>
+                            <div class="text-xs bg-gray-50 p-3 rounded">
+                                <div><strong>Admin:</strong> admin@electrohogar.com / admin123</div>
+                                <div><strong>Cliente:</strong> cliente@demo.com / cliente123</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                this.showModal(modalContent);
+            },
+
+            showRegisterModal() {
+                const modalContent = `
+                    <div class="bg-white rounded-lg p-8 max-w-md w-full">
+                        <h2 class="text-3xl font-bold mb-6 text-center">Registrarse</h2>
+                        
+                        <div class="space-y-4 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Nombre Completo</label>
+                                <input type="text" id="register-name" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Email</label>
+                                <input type="email" id="register-email" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Contraseña</label>
+                                <input type="password" id="register-password" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Confirmar Contraseña</label>
+                                <input type="password" id="register-confirm" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+
+                        <button onclick="app.register()" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold mb-4">
+                            Crear Cuenta
+                        </button>
+
+                        <div class="text-center text-sm text-gray-600">
+                            ¿Ya tienes cuenta? <a onclick="app.showLoginModal()" class="text-blue-600 cursor-pointer hover:underline">Inicia sesión aquí</a>
+                        </div>
+                    </div>
+                `;
+
+                this.showModal(modalContent);
+            },
+
+           async login() {
+    const email = document.getElementById('login-email')?.value;
+    const password = document.getElementById('login-password')?.value;
+
+    if (!email || !password) {
+        this.showNotification('Por favor completa todos los campos', 'warning');
+        return;
+    }
+
+    try {
+        const result = await this.apiRequest('login', 'users', { email, password });
+        
+        if (result.success && result.user) {
+            this.currentUser = result.user;
+            this.saveData();
+            this.renderUserMenu();
+            this.closeModal();
+            this.showNotification(`¡Bienvenido ${result.user.name}!`, 'success');
+        } else {
+            this.showNotification(result.error || 'Credenciales incorrectas', 'error');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        this.showNotification('Error al iniciar sesión', 'error');
+    }
+},
+            register() {
+                const name = document.getElementById('register-name')?.value;
+                const email = document.getElementById('register-email')?.value;
+                const password = document.getElementById('register-password')?.value;
+                const confirm = document.getElementById('register-confirm')?.value;
+
+                if (!name || !email || !password || !confirm) {
+                    this.showNotification('Por favor completa todos los campos', 'warning');
+                    return;
+                }
+
+                if (password !== confirm) {
+                    this.showNotification('Las contraseñas no coinciden', 'error');
+                    return;
+                }
+
+                if (this.users.some(u => u.email === email)) {
+                    this.showNotification('Este email ya está registrado', 'error');
+                    return;
+                }
+
+                const newUser = {
+                    id: this.users.length + 1,
+                    name,
+                    email,
+                    password,
+                    role: 'client',
+                    addresses: []
+                };
+
+                this.users.push(newUser);
+                this.currentUser = newUser;
+                this.saveData();
+                this.renderUserMenu();
+                this.closeModal();
+                this.showNotification('Cuenta creada exitosamente!', 'success');
+            },
+
+            logout() {
+                this.currentUser = null;
+                localStorage.removeItem('currentUser');
+                this.renderUserMenu();
+                this.showSection('home');
+                this.showNotification('Sesión cerrada', 'info');
+            },
+
+            // Modal Functions
+            showModal(content) {
+                const modal = document.createElement('div');
+                modal.className = 'modal active';
+                modal.id = 'app-modal';
+                modal.innerHTML = content;
+                modal.onclick = (e) => {
+                    if (e.target === modal) this.closeModal();
+                };
+                document.body.appendChild(modal);
+            },
+
+            closeModal() {
+                const modal = document.getElementById('app-modal');
+                if (modal) modal.remove();
+            },
+
+            // Notification System
+            showNotification(message, type = 'info') {
+                const container = document.getElementById('notifications-container');
+                const notification = document.createElement('div');
+                
+                const colors = {
+                    success: 'bg-green-500',
+                    error: 'bg-red-500',
+                    warning: 'bg-yellow-500',
+                    info: 'bg-blue-500'
+                };
+
+                const icons = {
+                    success: 'fa-check-circle',
+                    error: 'fa-times-circle',
+                    warning: 'fa-exclamation-triangle',
+                    info: 'fa-info-circle'
+                };
+
+                notification.className = `notification ${colors[type]} text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 mb-4`;
+                notification.innerHTML = `
+                    <i class="fas ${icons[type]} text-xl"></i>
+                    <span class="font-semibold">${message}</span>
+                    <button onclick="this.parentElement.remove()" class="ml-4">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+
+                container.appendChild(notification);
+                setTimeout(() => notification.remove(), 5000);
+            }
+        };
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+
+    
+    
+    <script src="https://cdn.botpress.cloud/webchat/v3.4/inject.js"></script>
+    <script src="https://files.bpcontent.cloud/2025/12/04/22/20251204225602-5HC0EVEL.js" defer></script>
+    
+    
+</body>
+</html>
